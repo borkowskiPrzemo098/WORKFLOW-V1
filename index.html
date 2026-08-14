@@ -91,20 +91,6 @@
   .btn-primary:active{transform:translateY(0px) scale(.98);}
   .btn-primary svg{width:16px; height:16px;}
 
-  /* Filters */
-  .filters{
-    display:flex; align-items:center; gap:8px; margin-bottom:22px; flex-wrap:wrap;
-  }
-  .chip{
-    border:1px solid var(--border); background:var(--surface);
-    color:var(--ink-soft); font-size:13px; font-weight:600;
-    padding:7px 14px; border-radius:999px; cursor:pointer;
-    font-family:inherit; transition:all .15s ease;
-  }
-  .chip:hover{border-color:var(--accent); color:var(--accent);}
-  .chip.active{background:var(--ink); border-color:var(--ink); color:#fff;}
-  .filters-sep{width:1px; height:18px; background:var(--border); margin:0 4px;}
-
   /* Board */
   .board{
     display:grid;
@@ -208,13 +194,7 @@
   .status-badge.done{background:var(--low-soft); color:var(--low); border-color:transparent;}
   .status-badge.progress{background:var(--mid-soft); color:var(--mid); border-color:transparent;}
 
-  .task-foot{display:flex; align-items:center; justify-content:space-between; margin-top:9px; padding-top:8px; border-top:1px dashed var(--border);}
-  .task-user{display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--ink-soft); font-weight:600;}
-  .avatar{
-    width:18px; height:18px; border-radius:50%; background:var(--accent-soft); color:var(--accent);
-    display:flex; align-items:center; justify-content:center; font-size:9.5px; font-weight:800;
-    flex-shrink:0;
-  }
+  .task-foot{display:flex; align-items:center; justify-content:flex-end; margin-top:9px; padding-top:8px; border-top:1px dashed var(--border);}
   .task-del{
     background:none; border:none; color:var(--ink-faint); cursor:pointer; padding:3px;
     border-radius:6px; display:flex; opacity:0; transition:opacity .12s ease, color .12s ease, background .12s ease;
@@ -366,11 +346,6 @@
     </div>
   </header>
 
-  <div class="filters" id="filters">
-    <button class="chip active" data-user="">Wszyscy</button>
-    <div class="filters-sep"></div>
-  </div>
-
   <div id="boardWrap">
     <div class="board" id="board"></div>
   </div>
@@ -389,10 +364,6 @@
       </button>
     </div>
     <form id="taskForm">
-      <div class="field">
-        <label for="fUser">Nazwa użytkownika</label>
-        <input type="text" id="fUser" placeholder="np. Kasia Nowak" required>
-      </div>
       <div class="field">
         <label for="fTitle">Tytuł zadania</label>
         <input type="text" id="fTitle" placeholder="np. Wysłać ofertę do klienta" required>
@@ -458,12 +429,10 @@
   const board = document.getElementById('board');
   const overlay = document.getElementById('overlay');
   const form = document.getElementById('taskForm');
-  const filtersEl = document.getElementById('filters');
   const toast = document.getElementById('toast');
   const toastText = document.getElementById('toastText');
 
   let urgencyVal = 'Średnia';
-  let activeUser = '';
 
   function loadTasks(){
     try{ return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
@@ -488,10 +457,6 @@
     return d.toLocaleDateString('pl-PL', {day:'2-digit', month:'2-digit'});
   }
 
-  function initials(name){
-    return name.trim().split(/\s+/).slice(0,2).map(w=>w[0]?.toUpperCase()||'').join('') || '?';
-  }
-
   const ICONS = {
     Pilne: '<svg viewBox="0 0 24 24" fill="none"><path d="M12 3l9 16H3l9-16z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 10v3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="16.6" r="1" fill="currentColor"/></svg>',
     Wysoka: '<svg viewBox="0 0 24 24" fill="none"><path d="M5 19V13M12 19V7M19 19v-9" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"/></svg>',
@@ -511,26 +476,7 @@
     const today = new Date(); today.setHours(0,0,0,0);
     const monday = mondayOfWeek(today);
 
-    // filters
-    const users = Array.from(new Set(tasks.map(t=>t.user))).sort((a,b)=>a.localeCompare(b,'pl'));
-    filtersEl.innerHTML = '';
-    const allChip = document.createElement('button');
-    allChip.className = 'chip' + (activeUser==='' ? ' active' : '');
-    allChip.textContent = 'Wszyscy';
-    allChip.onclick = ()=>{ activeUser=''; render(); };
-    filtersEl.appendChild(allChip);
-    if(users.length){
-      const sep = document.createElement('div'); sep.className='filters-sep'; filtersEl.appendChild(sep);
-      users.forEach(u=>{
-        const c = document.createElement('button');
-        c.className = 'chip' + (activeUser===u ? ' active' : '');
-        c.textContent = u;
-        c.onclick = ()=>{ activeUser = (activeUser===u? '' : u); render(); };
-        filtersEl.appendChild(c);
-      });
-    }
-
-    const visible = tasks.filter(t => !activeUser || t.user === activeUser);
+    const visible = tasks;
 
     // stats
     document.getElementById('cntAll').textContent = visible.length;
@@ -588,7 +534,6 @@
               ${t.time ? `<span class="task-time"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>${t.time}</span>` : ''}
             </div>
             <div class="task-foot">
-              <div class="task-user"><span class="avatar">${initials(t.user)}</span>${escapeHtml(t.user)}</div>
               <button class="task-del" data-id="${t.id}" aria-label="Usuń zadanie" title="Usuń">
                 <svg viewBox="0 0 24 24" fill="none"><path d="M4 7h16M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2m2 0l-1 13a2 2 0 01-2 2H9a2 2 0 01-2-2L6 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
               </button>
@@ -616,7 +561,7 @@
     const today = new Date().toISOString().slice(0,10);
     document.getElementById('fDay').value = today;
     overlay.classList.add('open');
-    setTimeout(()=>document.getElementById('fUser').focus(), 120);
+    setTimeout(()=>document.getElementById('fTitle').focus(), 120);
   }
   function closeModal(){
     overlay.classList.remove('open');
@@ -648,17 +593,16 @@
 
   form.addEventListener('submit', (e)=>{
     e.preventDefault();
-    const user = document.getElementById('fUser').value.trim();
     const title = document.getElementById('fTitle').value.trim();
     const difficulty = document.getElementById('fDiff').value;
     const day = document.getElementById('fDay').value;
     const time = document.getElementById('fTime').value;
     const status = document.getElementById('fStatus').value;
     const description = document.getElementById('fDesc').value.trim();
-    if(!user || !title || !day) return;
+    if(!title || !day) return;
 
     const tasks = loadTasks();
-    tasks.push({ id: uid(), user, title, difficulty, urgency: urgencyVal, day, time, status, description, createdAt: Date.now(), notifiedAt: null });
+    tasks.push({ id: uid(), title, difficulty, urgency: urgencyVal, day, time, status, description, createdAt: Date.now(), notifiedAt: null });
     saveTasks(tasks);
     closeModal();
     showToast('Zadanie zostało dodane');
@@ -717,9 +661,9 @@
       t.notifiedAt = todayKey + t.time;
       changed = true;
       beep();
-      showToast(`⏰ „${t.title}" — czas na to zadanie (${t.user})`);
+      showToast(`⏰ „${t.title}" — czas na to zadanie`);
       if('Notification' in window && Notification.permission === 'granted'){
-        try{ new Notification('Workflow — zadanie do zrobienia', { body: `${t.title} (${t.user})`, tag: t.id }); }catch(e){}
+        try{ new Notification('Workflow — zadanie do zrobienia', { body: t.title, tag: t.id }); }catch(e){}
       }
       const card = document.querySelector(`.task[data-id="${t.id}"]`);
       if(card){ card.classList.add('is-firing'); setTimeout(()=>card.classList.remove('is-firing'), 3200); }
