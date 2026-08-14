@@ -6,9 +6,9 @@ Prosty, nowoczesny dashboard do zarządzania zadaniami w pracy. Statyczna strona
 
 - Dodawanie zadania: tytuł, poziom trudności, **kategoria** (Esklep/Mail/Oferta/Mailing/Płatności/Zamówienie/Kolekcja — każda z własną ikoną), pilność, dzień realizacji (lub „bez terminu”), opcjonalny przedział czasowy „Od–Do” w interwałach co 30 minut (dźwięk przypomnienia gra o godzinie „Od”), cykliczność (codziennie/co tydzień/co miesiąc), status, opis.
 - Dwa niezależne kalendarze — **Praca** / **Prywatny** — przełącznik w nagłówku; każdy pokazuje tylko swoje zadania, nowe zadanie trafia do aktualnie wybranego.
-- Widoki: **Dziś**, **Tydzień**, **Miesiąc** (kalendarz), **Zaległe** (przeterminowane, nieukończone) i **Archiwum** (ukończone — znikają z kalendarza i trafiają tutaj).
+- Widoki: **Dziś**, **Tydzień**, **Miesiąc** (kalendarz), **Zaległe** (przeterminowane, nieukończone) i **Archiwum** (dodatkowy widok samych ukończonych zadań, do przeglądania).
 - Filtr obok zakładek widoków: wybierz wymiar (Pilność lub Kategoria), potem konkretną wartość (np. Kategoria → Esklep) — wtedy w całej aplikacji widać tylko pasujące zadania, aż do kliknięcia „Wyczyść filtr”.
-- W kalendarzu zadania pokazują się jako kompaktowe, kolorowe (wg pilności) „chipy” z ikoną i skróconym tytułem — pełne szczegóły widać po najechaniu myszką (podgląd) lub po kliknięciu (edycja), więc dzień z wieloma zadaniami nie rozciąga się na całą wysokość ekranu.
+- W kalendarzu zadania pokazują się jako kompaktowe, kolorowe (wg pilności) „chipy” z checkboxem, ikoną i skróconym tytułem — dzień z wieloma zadaniami nie rozciąga się na całą wysokość ekranu. Kliknięcie checkboxa oznacza zadanie jako zrobione bez otwierania edycji: zadanie zostaje na miejscu w kalendarzu, tylko przygasza i przekreśla tytuł. Pełne szczegóły widać po najechaniu myszką (podgląd) lub po kliknięciu w resztę chipu (edycja).
 - Zadania bez terminu trafiają do osobnego panelu bocznego zamiast konkretnego dnia.
 - Wyszukiwarka po tytule zadania, filtrująca na żywo niezależnie od aktywnej zakładki.
 - Tryb jasny/ciemny z przełącznikiem w nagłówku, zapamiętywany w przeglądarce.
