@@ -4,7 +4,7 @@ Prosty, nowoczesny dashboard do zarządzania zadaniami w pracy. Statyczna strona
 
 ## Funkcje
 
-- Dodawanie zadania: tytuł, poziom trudności, pilność, dzień realizacji (lub „bez terminu”), opcjonalna godzina przypomnienia, cykliczność (codziennie/co tydzień/co miesiąc), status, opis.
+- Dodawanie zadania: tytuł, poziom trudności, pilność, dzień realizacji (lub „bez terminu”), opcjonalny przedział czasowy „Od–Do” w interwałach co 30 minut (dźwięk przypomnienia gra o godzinie „Od”), cykliczność (codziennie/co tydzień/co miesiąc), status, opis.
 - Widoki: **Dziś**, **Tydzień**, **Miesiąc** (kalendarz), **Zaległe** (przeterminowane, nieukończone) i **Archiwum** (ukończone — znikają z kalendarza i trafiają tutaj).
 - Zadania bez terminu trafiają do osobnego panelu bocznego zamiast konkretnego dnia.
 - Wyszukiwarka po tytule zadania, filtrująca na żywo niezależnie od aktywnej zakładki.

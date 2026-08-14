@@ -317,7 +317,17 @@
   .task.is-done .task-title{text-decoration:line-through; color:var(--ink-faint);}
 
   .task-top{display:flex; align-items:flex-start; gap:6px;}
-  .task-title{flex:1; min-width:0; font-size:14px; font-weight:650; line-height:1.35; color:var(--ink); word-break:break-word;}
+  .task-title{
+    flex:1; min-width:0; font-size:14px; font-weight:650; line-height:1.35; color:var(--ink);
+    word-break:break-word;
+    /* Cap long titles at 2 lines instead of letting narrow calendar columns
+       (e.g. laptop-width windows) push cards tall with a wall of wrapped text.
+       Full title is still available via the tooltip and the edit modal. */
+    display:-webkit-box;
+    -webkit-line-clamp:2;
+    -webkit-box-orient:vertical;
+    overflow:hidden;
+  }
 
   .task-check{
     flex-shrink:0; width:19px; height:19px; margin-top:1px; border-radius:6px;
@@ -624,8 +634,11 @@
         To zadanie nie ma konkretnego terminu
       </label>
       <div class="field" id="fTimeField">
-        <label for="fTime">Godzina przypomnienia <span style="font-weight:500; color:var(--ink-faint);">(opcjonalnie — zagra dźwięk o tej porze)</span></label>
-        <input type="time" id="fTime">
+        <label>Przedział czasowy <span style="font-weight:500; color:var(--ink-faint);">(opcjonalnie, co 30 minut — dźwięk zagra o godzinie „Od”)</span></label>
+        <div class="row2">
+          <select id="fTimeStart" aria-label="Od godziny"></select>
+          <select id="fTimeEnd" aria-label="Do godziny"></select>
+        </div>
       </div>
       <label class="checkbox-row" for="fRecurring" id="fRecurringRow">
         <input type="checkbox" id="fRecurring">
@@ -841,6 +854,20 @@
     return new Date(y, m-1, d).toLocaleDateString('pl-PL', {day:'2-digit', month:'2-digit'});
   }
 
+  // `timeStart`/`timeEnd` is the current schema; `time` is the older single-time
+  // field from before the range picker existed. Reading through this helper
+  // keeps tasks saved before this change displaying and alerting correctly.
+  function taskTimeStart(t){ return t.timeStart || t.time || ''; }
+  function taskTimeLabel(t){
+    const start = taskTimeStart(t);
+    if(!start) return '';
+    return t.timeEnd ? `${start}–${t.timeEnd}` : start;
+  }
+  const TIME_OPTIONS = Array.from({length:48}, (_, i) => {
+    const h = String(Math.floor(i/2)).padStart(2,'0'), m = i % 2 === 0 ? '00' : '30';
+    return `${h}:${m}`;
+  });
+
   // Builds one task card. `showDate` adds a small date chip — used in the
   // no-date sidebar's "Zaplanuj" hint and in the pilne-zadania list, where
   // the surrounding context alone doesn't say which day a task belongs to.
@@ -864,7 +891,7 @@
       <div class="task-meta">
         <span class="badge diff-${t.difficulty}">${t.difficulty}</span>
         <span class="badge status-badge ${statusClass(t.status)}">${t.status}</span>
-        ${t.time ? `<span class="task-time"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>${t.time}</span>` : ''}
+        ${taskTimeLabel(t) ? `<span class="task-time"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>${taskTimeLabel(t)}</span>` : ''}
         ${opts.showDate ? `<span class="task-day">${t.day ? fmtDayShort(t.day) : 'Bez terminu'}</span>` : ''}
       </div>
       <div class="task-foot">
@@ -1106,17 +1133,24 @@
 
   // Modal open/close — pass a task to edit it, or nothing to add a new one
   const fDay = document.getElementById('fDay');
-  const fTime = document.getElementById('fTime');
+  const fTimeStart = document.getElementById('fTimeStart');
+  const fTimeEnd = document.getElementById('fTimeEnd');
   const fNoDate = document.getElementById('fNoDate');
   const fRecurring = document.getElementById('fRecurring');
   const fRecurrence = document.getElementById('fRecurrence');
+
+  // Populate the 30-minute interval dropdowns once. "Do" also gets a leading
+  // blank option since an end time is optional even when a start is set.
+  fTimeStart.innerHTML = `<option value="">—</option>` + TIME_OPTIONS.map(t=>`<option value="${t}">${t}</option>`).join('');
+  fTimeEnd.innerHTML = `<option value="">—</option>` + TIME_OPTIONS.map(t=>`<option value="${t}">${t}</option>`).join('');
 
   function applyRecurringState(on){
     document.getElementById('fRecurrenceField').style.display = on ? 'flex' : 'none';
   }
   function applyNoDateState(noDate){
     fDay.disabled = noDate;
-    fTime.disabled = noDate;
+    fTimeStart.disabled = noDate;
+    fTimeEnd.disabled = noDate;
     document.getElementById('fTimeField').style.opacity = noDate ? .45 : 1;
     document.getElementById('fTimeField').style.pointerEvents = noDate ? 'none' : 'auto';
     if(noDate){ fDay.removeAttribute('required'); } else { fDay.setAttribute('required','required'); }
@@ -1134,7 +1168,8 @@
     document.getElementById('fDiff').value = task ? task.difficulty : 'Średnie';
     fNoDate.checked = task ? !task.day : false;
     fDay.value = task ? (task.day || '') : dateKey(new Date());
-    fTime.value = task ? (task.time || '') : '';
+    fTimeStart.value = task ? taskTimeStart(task) : '';
+    fTimeEnd.value = task ? (task.timeEnd || '') : '';
     applyNoDateState(fNoDate.checked);
 
     const hasRecurrence = task && task.recurrence && task.recurrence !== 'none';
@@ -1200,7 +1235,10 @@
     const title = document.getElementById('fTitle').value.trim();
     const difficulty = document.getElementById('fDiff').value;
     const day = fNoDate.checked ? '' : fDay.value;
-    const time = fNoDate.checked ? '' : fTime.value;
+    const timeStart = fNoDate.checked ? '' : fTimeStart.value;
+    // An end time only makes sense paired with a start, and after it.
+    let timeEnd = (fNoDate.checked || !timeStart) ? '' : fTimeEnd.value;
+    if(timeEnd && timeEnd <= timeStart) timeEnd = '';
     const recurrence = (!fNoDate.checked && fRecurring.checked) ? fRecurrence.value : 'none';
     const status = document.getElementById('fStatus').value;
     const description = document.getElementById('fDesc').value.trim();
@@ -1214,15 +1252,15 @@
         const prev = tasks[idx];
         // Reset the fired-reminder marker whenever day/time/recurrence actually
         // changed, so an edited task can alert again.
-        const sameSchedule = prev.day===day && prev.time===time && prev.recurrence===recurrence;
+        const sameSchedule = prev.day===day && taskTimeStart(prev)===timeStart && prev.recurrence===recurrence;
         const notifiedAt = sameSchedule ? prev.notifiedAt : null;
-        tasks[idx] = { ...prev, title, difficulty, urgency: urgencyVal, day, time, recurrence, status, description, notifiedAt };
+        tasks[idx] = { ...prev, title, difficulty, urgency: urgencyVal, day, time: undefined, timeStart, timeEnd, recurrence, status, description, notifiedAt };
       }
       saveTasks(tasks);
       closeModal();
       showToast('Zadanie zostało zaktualizowane');
     } else {
-      tasks.push({ id: uid(), title, difficulty, urgency: urgencyVal, day, time, recurrence, status, description, createdAt: Date.now(), notifiedAt: null });
+      tasks.push({ id: uid(), title, difficulty, urgency: urgencyVal, day, timeStart, timeEnd, recurrence, status, description, createdAt: Date.now(), notifiedAt: null });
       saveTasks(tasks);
       closeModal();
       showToast('Zadanie zostało dodane');
@@ -1274,12 +1312,13 @@
     const tasks = loadTasks();
     let changed = false;
     tasks.forEach(t=>{
-      if(!t.time || t.status === 'Zrobione') return;
+      const start = taskTimeStart(t);
+      if(!start || t.status === 'Zrobione') return;
       if(!taskOccursOn(t, now)) return;
-      if(t.time !== hhmm) return;
-      if(t.notifiedAt === todayKey + t.time) return; // already fired for this minute
+      if(start !== hhmm) return;
+      if(t.notifiedAt === todayKey + start) return; // already fired for this minute
 
-      t.notifiedAt = todayKey + t.time;
+      t.notifiedAt = todayKey + start;
       changed = true;
       beep();
       showToast(`⏰ „${t.title}" — czas na to zadanie`);
@@ -1293,7 +1332,7 @@
   }
 
   // Ask for notification permission the first time a reminder time is actually set
-  document.getElementById('fTime').addEventListener('change', function(){
+  fTimeStart.addEventListener('change', function(){
     if(this.value && 'Notification' in window && Notification.permission === 'default'){
       Notification.requestPermission().catch(()=>{});
     }
