@@ -134,6 +134,27 @@
   [data-theme="dark"] .theme-toggle .moon-icon{display:none;}
   [data-theme="dark"] .theme-toggle .sun-icon{display:block;}
 
+  .color-picker-wrap{position:relative;}
+  .color-popover{
+    position:absolute; top:46px; right:0;
+    background:var(--surface); border:1px solid var(--border); border-radius:14px;
+    padding:12px; box-shadow:var(--shadow-lg);
+    display:grid; grid-template-columns:repeat(3, 1fr); gap:10px;
+    opacity:0; transform:translateY(-6px); pointer-events:none;
+    transition:opacity .15s ease, transform .15s ease; z-index:60;
+  }
+  .color-popover.open{opacity:1; transform:translateY(0); pointer-events:auto;}
+  .color-swatch{
+    width:30px; height:30px; border-radius:50%; cursor:pointer;
+    border:2px solid transparent; padding:0; position:relative;
+    box-shadow:inset 0 0 0 1px rgba(0,0,0,.08);
+  }
+  .color-swatch.active{border-color:var(--ink);}
+  .color-swatch.active::after{
+    content:''; position:absolute; inset:0; margin:auto; width:9px; height:9px;
+    border-radius:50%; background:#fff; box-shadow:0 0 0 1px rgba(0,0,0,.15);
+  }
+
   .search-box{
     display:flex; align-items:center; gap:8px;
     background:var(--surface); border:1px solid var(--border); border-radius:11px;
@@ -506,6 +527,12 @@
         <svg class="moon-icon" viewBox="0 0 24 24" fill="none"><path d="M20 14.5A8.5 8.5 0 019.5 4 8.5 8.5 0 1020 14.5z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
         <svg class="sun-icon" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.5" stroke="currentColor" stroke-width="1.8"/><path d="M12 2.5v2.5M12 19v2.5M21.5 12H19M5 12H2.5M18.4 5.6l-1.8 1.8M7.4 16.6l-1.8 1.8M18.4 18.4l-1.8-1.8M7.4 7.4L5.6 5.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
       </button>
+      <div class="color-picker-wrap">
+        <button class="theme-toggle" id="colorPickerBtn" type="button" title="Kolor motywu" aria-label="Wybierz kolor motywu">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 3a9 9 0 000 18c1.4 0 2-1 2-2s-.5-1.3-.5-2 .5-1.2 1.5-1.2H16a4 4 0 004-4c0-4.4-3.6-8.8-8-8.8z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><circle cx="7.3" cy="11" r="1.15" fill="currentColor"/><circle cx="9.8" cy="7" r="1.15" fill="currentColor"/><circle cx="14.5" cy="7" r="1.15" fill="currentColor"/><circle cx="16.8" cy="11" r="1.15" fill="currentColor"/></svg>
+        </button>
+        <div class="color-popover" id="colorPopover"></div>
+      </div>
       <div class="stat-pill" id="clockPill" title="Aktualny czas">
         <svg viewBox="0 0 24 24" fill="none" width="13" height="13"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 7v5l3.2 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
         <b id="liveClock">--:--</b>
@@ -659,13 +686,37 @@
 (function(){
   const STORAGE_KEY = 'workflow_v1_tasks';
   const THEME_KEY = 'workflow_v1_theme';
+  const ACCENT_KEY = 'workflow_v1_accent';
   const DAY_NAMES = ['Poniedziałek','Wtorek','Środa','Czwartek','Piątek','Sobota','Niedziela'];
   const URGENCY_ORDER = {'Pilne':0,'Wysoka':1,'Średnia':2,'Niska':3};
 
-  // Theme (light/dark), persisted; falls back to the OS preference on first visit.
+  // Accent color palette. Each preset retints both the primary accent (buttons,
+  // active states, links) and its soft tint — which the body background
+  // gradient is built from — so the whole page shifts hue, not just one button.
+  const ACCENT_PRESETS = {
+    blue:   { label:'Niebieski',    accent:'#3d5cff', softLight:'#eef1ff', softDark:'#232a45' },
+    violet: { label:'Fioletowy',    accent:'#8b5cf6', softLight:'#f1ecfe', softDark:'#2c2542' },
+    green:  { label:'Zielony',      accent:'#15a35a', softLight:'#e6f7ee', softDark:'#17351f' },
+    rose:   { label:'Różowy',       accent:'#e0437a', softLight:'#fdecf2', softDark:'#3a2230' },
+    amber:  { label:'Bursztynowy',  accent:'#c97a1f', softLight:'#fdf1e0', softDark:'#3a2c16' },
+    teal:   { label:'Turkusowy',    accent:'#0d9488', softLight:'#e3f6f4', softDark:'#173330' }
+  };
+  let currentAccent = localStorage.getItem(ACCENT_KEY) || 'blue';
+  if(!ACCENT_PRESETS[currentAccent]) currentAccent = 'blue';
+
+  // Theme (light/dark) and accent color, both persisted; theme falls back to
+  // the OS preference on first visit.
+  function applyColors(){
+    const mode = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+    const p = ACCENT_PRESETS[currentAccent];
+    document.documentElement.style.setProperty('--accent', p.accent);
+    document.documentElement.style.setProperty('--accent-soft', mode === 'dark' ? p.softDark : p.softLight);
+    document.querySelectorAll('.color-swatch').forEach(b => b.classList.toggle('active', b.dataset.color === currentAccent));
+  }
   function applyTheme(mode){
     document.documentElement.setAttribute('data-theme', mode);
     localStorage.setItem(THEME_KEY, mode);
+    applyColors();
   }
   (function initTheme(){
     const saved = localStorage.getItem(THEME_KEY);
@@ -676,6 +727,29 @@
     const current = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
     applyTheme(current === 'dark' ? 'light' : 'dark');
   });
+
+  // Color picker: a popover of swatches next to the theme toggle
+  const colorPopover = document.getElementById('colorPopover');
+  colorPopover.innerHTML = Object.entries(ACCENT_PRESETS).map(([key, p]) =>
+    `<button class="color-swatch" type="button" data-color="${key}" title="${p.label}" aria-label="${p.label}" style="background:${p.accent}"></button>`
+  ).join('');
+  colorPopover.addEventListener('click', (e)=>{
+    const btn = e.target.closest('.color-swatch');
+    if(!btn) return;
+    currentAccent = btn.dataset.color;
+    localStorage.setItem(ACCENT_KEY, currentAccent);
+    applyColors();
+    colorPopover.classList.remove('open');
+  });
+  document.getElementById('colorPickerBtn').addEventListener('click', (e)=>{
+    e.stopPropagation();
+    colorPopover.classList.toggle('open');
+  });
+  document.addEventListener('click', (e)=>{
+    if(!colorPopover.contains(e.target) && e.target.id !== 'colorPickerBtn') colorPopover.classList.remove('open');
+  });
+
+  applyColors();
 
   const board = document.getElementById('board');
   const overlay = document.getElementById('overlay');
