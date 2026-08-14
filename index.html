@@ -295,6 +295,16 @@
   .task-top{display:flex; align-items:flex-start; gap:6px;}
   .task-title{flex:1; min-width:0; font-size:14px; font-weight:650; line-height:1.35; color:var(--ink); word-break:break-word;}
 
+  .task-check{
+    flex-shrink:0; width:19px; height:19px; margin-top:1px; border-radius:6px;
+    border:1.5px solid var(--border); background:var(--surface); cursor:pointer;
+    display:flex; align-items:center; justify-content:center; padding:0;
+    color:transparent; transition:all .12s ease;
+  }
+  .task-check:hover{border-color:var(--low);}
+  .task-check svg{width:12px; height:12px; stroke:currentColor;}
+  .task.is-done .task-check{background:var(--low); border-color:var(--low); color:#fff;}
+
   .urg-icon{
     flex-shrink:0; width:20px; height:20px; border-radius:6px;
     display:flex; align-items:center; justify-content:center;
@@ -759,6 +769,9 @@
     card.title = t.description || '';
     card.innerHTML = `
       <div class="task-top">
+        <button class="task-check" data-id="${t.id}" aria-label="${t.status==='Zrobione' ? 'Cofnij ukończenie' : 'Oznacz jako zrobione'}" title="${t.status==='Zrobione' ? 'Cofnij ukończenie' : 'Oznacz jako zrobione'}">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M4 12l5 5L20 6" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
         ${isRecurring ? `<span class="recur-badge" title="Zadanie cykliczne: ${RECUR_LABEL[t.recurrence]}"><svg viewBox="0 0 24 24" fill="none"><path d="M4 12a8 8 0 0114-5.3M20 12a8 8 0 01-14 5.3M17 4v4h-4M7 20v-4h4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>` : ''}
         <div class="task-title">${escapeHtml(t.title)}</div>
         <div class="urg-icon" title="Pilność: ${t.urgency}">${ICONS[t.urgency]}</div>
@@ -775,6 +788,17 @@
         </button>
       </div>
     `;
+    card.querySelector('.task-check').addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const all = loadTasks();
+      const idx = all.findIndex(x=>x.id===t.id);
+      if(idx !== -1){
+        all[idx].status = all[idx].status === 'Zrobione' ? 'Do zrobienia' : 'Zrobione';
+        saveTasks(all);
+      }
+      closeUrgentModal();
+      render();
+    });
     card.querySelector('.task-del').addEventListener('click', (e)=>{
       e.stopPropagation();
       const all = loadTasks().filter(x=>x.id!==t.id);
