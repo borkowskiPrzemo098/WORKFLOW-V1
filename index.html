@@ -402,7 +402,7 @@
 <div class="overlay" id="overlay">
   <div class="modal">
     <div class="modal-head">
-      <h2>Nowe zadanie</h2>
+      <h2 id="modalTitle">Nowe zadanie</h2>
       <button class="modal-close" id="closeModal" aria-label="Zamknij">
         <svg viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
       </button>
@@ -453,7 +453,7 @@
       </div>
       <div class="modal-actions">
         <button type="button" class="btn-ghost" id="cancelModal">Anuluj</button>
-        <button type="submit" class="btn-submit">Dodaj zadanie</button>
+        <button type="submit" class="btn-submit" id="submitBtn">Dodaj zadanie</button>
       </div>
     </form>
   </div>
@@ -477,6 +477,7 @@
   const toastText = document.getElementById('toastText');
 
   let urgencyVal = 'Średnia';
+  let editingId = null;
 
   function loadTasks(){
     try{ return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
@@ -606,6 +607,7 @@
             saveTasks(all);
             render();
           });
+          card.addEventListener('click', ()=> openModal(t));
           body.appendChild(card);
         });
       }
@@ -617,21 +619,35 @@
     return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
 
-  // Modal open/close
-  function openModal(){
-    document.getElementById('fDay').value = dateKey(new Date());
+  // Modal open/close — pass a task to edit it, or nothing to add a new one
+  function openModal(task){
+    editingId = task ? task.id : null;
+    document.getElementById('modalTitle').textContent = task ? 'Edytuj zadanie' : 'Nowe zadanie';
+    document.getElementById('submitBtn').textContent = task ? 'Zapisz zmiany' : 'Dodaj zadanie';
+
+    document.getElementById('fTitle').value = task ? task.title : '';
+    document.getElementById('fDiff').value = task ? task.difficulty : 'Średnie';
+    document.getElementById('fDay').value = task ? task.day : dateKey(new Date());
+    document.getElementById('fTime').value = task ? (task.time || '') : '';
+    document.getElementById('fStatus').value = task ? task.status : 'Do zrobienia';
+    document.getElementById('fDesc').value = task ? (task.description || '') : '';
+
+    urgencyVal = task ? task.urgency : 'Średnia';
+    document.querySelectorAll('.urgency-opt').forEach(o=>o.classList.toggle('active', o.dataset.val===urgencyVal));
+
     overlay.classList.add('open');
     setTimeout(()=>document.getElementById('fTitle').focus(), 120);
   }
   function closeModal(){
     overlay.classList.remove('open');
     form.reset();
+    editingId = null;
     urgencyVal = 'Średnia';
     document.querySelectorAll('.urgency-opt').forEach(o=>o.classList.toggle('active', o.dataset.val==='Średnia'));
   }
 
-  document.getElementById('openAddTop').addEventListener('click', openModal);
-  document.getElementById('openAddFab').addEventListener('click', openModal);
+  document.getElementById('openAddTop').addEventListener('click', ()=>openModal());
+  document.getElementById('openAddFab').addEventListener('click', ()=>openModal());
   document.getElementById('closeModal').addEventListener('click', closeModal);
   document.getElementById('cancelModal').addEventListener('click', closeModal);
   overlay.addEventListener('click', (e)=>{ if(e.target === overlay) closeModal(); });
@@ -662,10 +678,24 @@
     if(!title || !day) return;
 
     const tasks = loadTasks();
-    tasks.push({ id: uid(), title, difficulty, urgency: urgencyVal, day, time, status, description, createdAt: Date.now(), notifiedAt: null });
-    saveTasks(tasks);
-    closeModal();
-    showToast('Zadanie zostało dodane');
+    if(editingId){
+      const idx = tasks.findIndex(x=>x.id===editingId);
+      if(idx !== -1){
+        const prev = tasks[idx];
+        // Reset the fired-reminder marker whenever day/time actually changed,
+        // so an edited task can alert again.
+        const notifiedAt = (prev.day===day && prev.time===time) ? prev.notifiedAt : null;
+        tasks[idx] = { ...prev, title, difficulty, urgency: urgencyVal, day, time, status, description, notifiedAt };
+      }
+      saveTasks(tasks);
+      closeModal();
+      showToast('Zadanie zostało zaktualizowane');
+    } else {
+      tasks.push({ id: uid(), title, difficulty, urgency: urgencyVal, day, time, status, description, createdAt: Date.now(), notifiedAt: null });
+      saveTasks(tasks);
+      closeModal();
+      showToast('Zadanie zostało dodane');
+    }
     render();
   });
 
