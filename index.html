@@ -499,6 +499,26 @@
     background:var(--accent-soft); padding:3px 7px; border-radius:6px;
   }
 
+  /* Hover preview: a larger, unclamped read-only copy of a task card,
+     shown next to whichever card the pointer is resting on. */
+  .task-preview{
+    position:fixed; z-index:150; width:300px; max-width:90vw;
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    box-shadow:var(--shadow-lg); padding:16px;
+    opacity:0; transform:translateY(4px) scale(.98); pointer-events:none;
+    transition:opacity .14s ease, transform .14s ease;
+  }
+  .task-preview.show{opacity:1; transform:translateY(0) scale(1);}
+  .task-preview .tp-top{display:flex; align-items:flex-start; gap:8px; margin-bottom:8px;}
+  .task-preview .tp-title{flex:1; min-width:0; font-size:15px; font-weight:700; line-height:1.35; color:var(--ink); word-break:break-word;}
+  .task-preview .tp-title.is-done{text-decoration:line-through; color:var(--ink-faint);}
+  .task-preview .tp-meta{display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:10px;}
+  .task-preview .tp-desc{
+    font-size:13px; line-height:1.55; color:var(--ink-soft);
+    padding-top:10px; border-top:1px dashed var(--border); white-space:pre-wrap; word-break:break-word;
+  }
+  .task-preview .tp-desc.empty{color:var(--ink-faint); font-style:italic;}
+
   .toast{
     position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(20px);
     background:var(--ink); color:#fff; padding:12px 20px; border-radius:11px;
@@ -698,6 +718,8 @@
   <span id="toastText">Zadanie dodane</span>
 </div>
 
+<div class="task-preview" id="taskPreview"></div>
+
 <script>
 (function(){
   const STORAGE_KEY = 'workflow_v1_tasks';
@@ -871,6 +893,51 @@
   // Builds one task card. `showDate` adds a small date chip — used in the
   // no-date sidebar's "Zaplanuj" hint and in the pilne-zadania list, where
   // the surrounding context alone doesn't say which day a task belongs to.
+  // Hover preview: a bigger, unclamped popup with the task's full details —
+  // stands in for the native title tooltip, which is slow, plain-text-only,
+  // and can't be styled to match the rest of the card.
+  const previewEl = document.getElementById('taskPreview');
+  let previewTimer = null;
+  function buildPreviewHTML(t){
+    const isRecurring = t.recurrence && t.recurrence !== 'none';
+    return `
+      <div class="tp-top">
+        <div class="tp-title${t.status==='Zrobione' ? ' is-done' : ''}">${escapeHtml(t.title)}</div>
+        <div class="urg-icon" title="Pilność: ${t.urgency}">${ICONS[t.urgency]}</div>
+      </div>
+      <div class="tp-meta">
+        <span class="badge diff-${t.difficulty}">${t.difficulty}</span>
+        <span class="badge status-badge ${statusClass(t.status)}">${t.status}</span>
+        ${taskTimeLabel(t) ? `<span class="task-time">${taskTimeLabel(t)}</span>` : ''}
+        <span class="task-day">${t.day ? fmtDayShort(t.day) : 'Bez terminu'}</span>
+        ${isRecurring ? `<span class="badge status-badge">🔁 ${RECUR_LABEL[t.recurrence]}</span>` : ''}
+      </div>
+      <div class="tp-desc${t.description ? '' : ' empty'}">${t.description ? escapeHtml(t.description) : 'Brak opisu'}</div>
+    `;
+  }
+  function showTaskPreview(t, cardEl){
+    clearTimeout(previewTimer);
+    previewTimer = setTimeout(()=>{
+      previewEl.innerHTML = buildPreviewHTML(t);
+      previewEl.classList.add('show');
+      const rect = cardEl.getBoundingClientRect();
+      const pw = previewEl.offsetWidth, ph = previewEl.offsetHeight;
+      let left = rect.right + 12;
+      if(left + pw > window.innerWidth - 8) left = rect.left - pw - 12;
+      if(left < 8) left = Math.max(8, Math.min(rect.left, window.innerWidth - pw - 8));
+      let top = Math.min(rect.top, window.innerHeight - ph - 8);
+      if(top < 8) top = 8;
+      previewEl.style.left = left + 'px';
+      previewEl.style.top = top + 'px';
+    }, 350);
+  }
+  function hideTaskPreview(){
+    clearTimeout(previewTimer);
+    previewEl.classList.remove('show');
+  }
+  window.addEventListener('scroll', hideTaskPreview, true);
+  window.addEventListener('resize', hideTaskPreview);
+
   function buildTaskCard(t, opts){
     opts = opts || {};
     const isRecurring = t.recurrence && t.recurrence !== 'none';
@@ -878,7 +945,6 @@
     const card = document.createElement('div');
     card.className = 'task ' + URG_CLASS[t.urgency] + (t.status==='Zrobione' ? ' is-done' : '') + (isOverdue ? ' is-overdue' : '');
     card.dataset.id = t.id;
-    card.title = t.description || '';
     card.innerHTML = `
       <div class="task-top">
         <button class="task-check" data-id="${t.id}" aria-label="${t.status==='Zrobione' ? 'Cofnij ukończenie' : 'Oznacz jako zrobione'}" title="${t.status==='Zrobione' ? 'Cofnij ukończenie' : 'Oznacz jako zrobione'}">
@@ -902,6 +968,7 @@
     `;
     card.querySelector('.task-check').addEventListener('click', (e)=>{
       e.stopPropagation();
+      hideTaskPreview();
       const all = loadTasks();
       const idx = all.findIndex(x=>x.id===t.id);
       if(idx !== -1){
@@ -913,12 +980,15 @@
     });
     card.querySelector('.task-del').addEventListener('click', (e)=>{
       e.stopPropagation();
+      hideTaskPreview();
       const all = loadTasks().filter(x=>x.id!==t.id);
       saveTasks(all);
       closeUrgentModal();
       render();
     });
-    card.addEventListener('click', ()=>{ closeUrgentModal(); openModal(t); });
+    card.addEventListener('click', ()=>{ hideTaskPreview(); closeUrgentModal(); openModal(t); });
+    card.addEventListener('mouseenter', ()=> showTaskPreview(t, card));
+    card.addEventListener('mouseleave', hideTaskPreview);
     return card;
   }
 
