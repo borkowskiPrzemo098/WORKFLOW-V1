@@ -34,18 +34,45 @@
     --font: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   }
 
+  [data-theme="dark"]{
+    --bg:#14161c;
+    --surface:#1c1f27;
+    --surface-2:#20232c;
+    --border:#31353f;
+    --ink:#eceef2;
+    --ink-soft:#a6acb8;
+    --ink-faint:#6b7280;
+    --accent:#5b7cff;
+    --accent-ink:#ffffff;
+    --accent-soft:#232a45;
+    --urgent:#f2645f;
+    --urgent-soft:#3a2226;
+    --high:#f0a34e;
+    --high-soft:#3a2c19;
+    --mid:#4fa3f2;
+    --mid-soft:#1c2c3d;
+    --low:#4cc384;
+    --low-soft:#1a2f24;
+    --done:#6b7280;
+    --done-soft:#262933;
+    --shadow-sm:0 1px 2px rgba(0,0,0,.3);
+    --shadow-md:0 6px 20px -4px rgba(0,0,0,.45), 0 2px 6px rgba(0,0,0,.3);
+    --shadow-lg:0 24px 60px -12px rgba(0,0,0,.6);
+  }
+
   *{box-sizing:border-box;}
   html,body{height:100%;}
   body{
     margin:0;
     font-family:var(--font);
     background:
-      radial-gradient(1200px 500px at 100% -10%, #eef1ff 0%, transparent 60%),
-      radial-gradient(900px 400px at -10% 0%, #eaf6f0 0%, transparent 55%),
+      radial-gradient(1200px 500px at 100% -10%, color-mix(in srgb, var(--accent-soft) 70%, transparent) 0%, transparent 60%),
+      radial-gradient(900px 400px at -10% 0%, color-mix(in srgb, var(--low-soft) 70%, transparent) 0%, transparent 55%),
       var(--bg);
     color:var(--ink);
     min-height:100%;
     -webkit-font-smoothing:antialiased;
+    transition:background-color .2s ease, color .2s ease;
   }
 
   .wrap{max-width:1320px; margin:0 auto; padding:28px 32px 120px;}
@@ -94,6 +121,61 @@
   .btn-primary:hover{transform:translateY(-1px); box-shadow:0 12px 26px -6px rgba(61,92,255,.6); background:#3352f0;}
   .btn-primary:active{transform:translateY(0px) scale(.98);}
   .btn-primary svg{width:16px; height:16px;}
+
+  .theme-toggle{
+    width:38px; height:38px; border-radius:11px; border:1px solid var(--border);
+    background:var(--surface); color:var(--ink-soft); cursor:pointer;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+    box-shadow:var(--shadow-sm); transition:all .15s ease;
+  }
+  .theme-toggle:hover{border-color:var(--accent); color:var(--accent);}
+  .theme-toggle svg{width:17px; height:17px;}
+  .theme-toggle .sun-icon{display:none;}
+  [data-theme="dark"] .theme-toggle .moon-icon{display:none;}
+  [data-theme="dark"] .theme-toggle .sun-icon{display:block;}
+
+  .search-box{
+    display:flex; align-items:center; gap:8px;
+    background:var(--surface); border:1px solid var(--border); border-radius:11px;
+    padding:0 12px; height:38px; box-shadow:var(--shadow-sm); width:200px; flex-shrink:0;
+  }
+  .search-box svg{width:15px; height:15px; color:var(--ink-faint); flex-shrink:0;}
+  .search-box input{
+    border:none; background:none; outline:none; font-family:inherit; font-size:13.5px;
+    color:var(--ink); width:100%; padding:0;
+  }
+  .search-box input::placeholder{color:var(--ink-faint);}
+
+  /* View tabs */
+  .view-tabs{
+    display:flex; align-items:center; gap:6px; margin-bottom:16px; flex-wrap:wrap;
+  }
+  .view-tab{
+    display:inline-flex; align-items:center; gap:6px;
+    border:1px solid var(--border); background:var(--surface); color:var(--ink-soft);
+    font-size:13px; font-weight:650; padding:8px 14px; border-radius:999px; cursor:pointer;
+    font-family:inherit; transition:all .15s ease;
+  }
+  .view-tab:hover{border-color:var(--accent); color:var(--accent);}
+  .view-tab.active{background:var(--ink); border-color:var(--ink); color:var(--surface);}
+  [data-theme="dark"] .view-tab.active{background:var(--accent); border-color:var(--accent); color:#fff;}
+  .view-tab .tab-badge{
+    background:var(--urgent); color:#fff; font-size:10.5px; font-weight:800;
+    min-width:17px; height:17px; padding:0 4px; border-radius:999px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .view-tab.active .tab-badge{background:rgba(255,255,255,.28);}
+
+  .flat-view{
+    display:flex; flex-direction:column; gap:9px; max-width:640px;
+  }
+  .recur-badge{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:20px; height:20px; border-radius:6px; background:var(--accent-soft); color:var(--accent);
+    flex-shrink:0; margin-top:1px;
+  }
+  .recur-badge svg{width:11px; height:11px;}
+  .task.is-overdue{border-color:var(--urgent);}
 
   /* Month navigation */
   .month-nav{
@@ -148,6 +230,10 @@
     grid-template-columns:repeat(7, minmax(0,1fr));
     gap:14px;
   }
+  .board.single{grid-template-columns:1fr; max-width:480px;}
+  .board.single .day-col{min-height:0;}
+  .board.single .day-body{gap:8px;}
+
   @media (max-width:900px){
     .board{grid-template-columns:repeat(1, 1fr);}
     .weekday-row{display:none;}
@@ -206,8 +292,8 @@
   .task.is-done{opacity:.6;}
   .task.is-done .task-title{text-decoration:line-through; color:var(--ink-faint);}
 
-  .task-top{display:flex; align-items:flex-start; justify-content:space-between; gap:6px;}
-  .task-title{font-size:13.5px; font-weight:650; line-height:1.35; color:var(--ink); word-break:break-word;}
+  .task-top{display:flex; align-items:flex-start; gap:6px;}
+  .task-title{flex:1; min-width:0; font-size:13.5px; font-weight:650; line-height:1.35; color:var(--ink); word-break:break-word;}
 
   .urg-icon{
     flex-shrink:0; width:20px; height:20px; border-radius:6px;
@@ -402,6 +488,14 @@
       </div>
     </div>
     <div class="top-actions">
+      <div class="search-box">
+        <svg viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input type="text" id="searchInput" placeholder="Szukaj zadania…">
+      </div>
+      <button class="theme-toggle" id="themeToggle" type="button" title="Zmień motyw" aria-label="Zmień motyw jasny/ciemny">
+        <svg class="moon-icon" viewBox="0 0 24 24" fill="none"><path d="M20 14.5A8.5 8.5 0 019.5 4 8.5 8.5 0 1020 14.5z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+        <svg class="sun-icon" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.5" stroke="currentColor" stroke-width="1.8"/><path d="M12 2.5v2.5M12 19v2.5M21.5 12H19M5 12H2.5M18.4 5.6l-1.8 1.8M7.4 16.6l-1.8 1.8M18.4 18.4l-1.8-1.8M7.4 7.4L5.6 5.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
       <div class="stat-pill" id="clockPill" title="Aktualny czas">
         <svg viewBox="0 0 24 24" fill="none" width="13" height="13"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 7v5l3.2 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
         <b id="liveClock">--:--</b>
@@ -417,7 +511,15 @@
     </div>
   </header>
 
-  <div class="month-nav">
+  <div class="view-tabs" id="viewTabs">
+    <button class="view-tab" data-view="today" type="button">Dziś</button>
+    <button class="view-tab" data-view="week" type="button">Tydzień</button>
+    <button class="view-tab" data-view="month" type="button">Miesiąc</button>
+    <button class="view-tab" data-view="overdue" type="button">Zaległe <span class="tab-badge" id="overdueBadge" style="display:none;">0</span></button>
+    <button class="view-tab" data-view="archive" type="button">Archiwum <span class="tab-badge" id="archiveBadge" style="display:none;">0</span></button>
+  </div>
+
+  <div class="month-nav" id="monthNav">
     <button class="month-btn" id="prevMonth" aria-label="Poprzedni miesiąc">
       <svg viewBox="0 0 24 24" fill="none"><path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -428,8 +530,8 @@
     <button class="chip-today" id="gotoToday">Dziś</button>
   </div>
 
-  <div class="calendar-layout">
-    <aside class="no-date-panel">
+  <div class="calendar-layout" id="calendarLayout">
+    <aside class="no-date-panel" id="noDatePanel">
       <div class="no-date-head">
         <span>Bez terminu</span>
         <div class="day-count" id="noDateCount">0</div>
@@ -441,6 +543,7 @@
       <div id="boardWrap">
         <div class="board" id="board"></div>
       </div>
+      <div class="flat-view" id="flatView" style="display:none;"></div>
     </div>
   </div>
 </div>
@@ -483,6 +586,18 @@
       <div class="field" id="fTimeField">
         <label for="fTime">Godzina przypomnienia <span style="font-weight:500; color:var(--ink-faint);">(opcjonalnie — zagra dźwięk o tej porze)</span></label>
         <input type="time" id="fTime">
+      </div>
+      <label class="checkbox-row" for="fRecurring" id="fRecurringRow">
+        <input type="checkbox" id="fRecurring">
+        To zadanie się powtarza
+      </label>
+      <div class="field" id="fRecurrenceField" style="display:none;">
+        <label for="fRecurrence">Jak często</label>
+        <select id="fRecurrence">
+          <option value="daily">Codziennie</option>
+          <option value="weekly" selected>Co tydzień</option>
+          <option value="monthly">Co miesiąc</option>
+        </select>
       </div>
       <div class="field">
         <label>Jak pilne jest zadanie?</label>
@@ -533,8 +648,24 @@
 <script>
 (function(){
   const STORAGE_KEY = 'workflow_v1_tasks';
+  const THEME_KEY = 'workflow_v1_theme';
   const DAY_NAMES = ['Poniedziałek','Wtorek','Środa','Czwartek','Piątek','Sobota','Niedziela'];
   const URGENCY_ORDER = {'Pilne':0,'Wysoka':1,'Średnia':2,'Niska':3};
+
+  // Theme (light/dark), persisted; falls back to the OS preference on first visit.
+  function applyTheme(mode){
+    document.documentElement.setAttribute('data-theme', mode);
+    localStorage.setItem(THEME_KEY, mode);
+  }
+  (function initTheme(){
+    const saved = localStorage.getItem(THEME_KEY);
+    const mode = saved || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    document.documentElement.setAttribute('data-theme', mode);
+  })();
+  document.getElementById('themeToggle').addEventListener('click', ()=>{
+    const current = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+    applyTheme(current === 'dark' ? 'light' : 'dark');
+  });
 
   const board = document.getElementById('board');
   const overlay = document.getElementById('overlay');
@@ -575,6 +706,26 @@
   const today = new Date(); today.setHours(0,0,0,0);
   let viewYear = today.getFullYear();
   let viewMonth = today.getMonth(); // 0-based
+  let viewWeekStart = mondayOfWeek(today);
+  let viewMode = 'month'; // today | week | month | overdue | archive
+  let searchQuery = '';
+
+  const RECUR_LABEL = {daily:'Codziennie', weekly:'Co tydzień', monthly:'Co miesiąc'};
+
+  // Does task `t` land on calendar date `d`? Recurring tasks are stored once
+  // and projected onto every matching future date instead of being duplicated.
+  function taskOccursOn(t, d){
+    if(!t.day) return false;
+    const [y,m,dd] = t.day.split('-').map(Number);
+    const base = new Date(y, m-1, dd);
+    if(d < base) return false;
+    switch(t.recurrence){
+      case 'daily': return true;
+      case 'weekly': return d.getDay() === base.getDay();
+      case 'monthly': return d.getDate() === base.getDate();
+      default: return dateKey(d) === t.day;
+    }
+  }
 
   const ICONS = {
     Pilne: '<svg viewBox="0 0 24 24" fill="none"><path d="M12 3l9 16H3l9-16z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 10v3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="16.6" r="1" fill="currentColor"/></svg>',
@@ -600,12 +751,15 @@
   // the surrounding context alone doesn't say which day a task belongs to.
   function buildTaskCard(t, opts){
     opts = opts || {};
+    const isRecurring = t.recurrence && t.recurrence !== 'none';
+    const isOverdue = t.day && !isRecurring && t.status !== 'Zrobione' && t.day < dateKey(today);
     const card = document.createElement('div');
-    card.className = 'task ' + URG_CLASS[t.urgency] + (t.status==='Zrobione' ? ' is-done' : '');
+    card.className = 'task ' + URG_CLASS[t.urgency] + (t.status==='Zrobione' ? ' is-done' : '') + (isOverdue ? ' is-overdue' : '');
     card.dataset.id = t.id;
     card.title = t.description || '';
     card.innerHTML = `
       <div class="task-top">
+        ${isRecurring ? `<span class="recur-badge" title="Zadanie cykliczne: ${RECUR_LABEL[t.recurrence]}"><svg viewBox="0 0 24 24" fill="none"><path d="M4 12a8 8 0 0114-5.3M20 12a8 8 0 01-14 5.3M17 4v4h-4M7 20v-4h4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>` : ''}
         <div class="task-title">${escapeHtml(t.title)}</div>
         <div class="urg-icon" title="Pilność: ${t.urgency}">${ICONS[t.urgency]}</div>
       </div>
@@ -616,7 +770,7 @@
         ${opts.showDate ? `<span class="task-day">${t.day ? fmtDayShort(t.day) : 'Bez terminu'}</span>` : ''}
       </div>
       <div class="task-foot">
-        <button class="task-del" data-id="${t.id}" aria-label="Usuń zadanie" title="Usuń">
+        <button class="task-del" data-id="${t.id}" aria-label="Usuń zadanie" title="${isRecurring ? 'Usuń całą serię' : 'Usuń'}">
           <svg viewBox="0 0 24 24" fill="none"><path d="M4 7h16M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2m2 0l-1 13a2 2 0 01-2 2H9a2 2 0 01-2-2L6 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
       </div>
@@ -632,17 +786,82 @@
     return card;
   }
 
-  function render(){
-    const tasks = loadTasks();
-    const todayKey = dateKey(today);
+  function updateBadge(id, n){
+    const el = document.getElementById(id);
+    el.textContent = n;
+    el.style.display = n > 0 ? 'flex' : 'none';
+  }
 
-    document.getElementById('monthLabel').textContent = `${MONTH_NAMES[viewMonth]} ${viewYear}`;
+  function showFlatView(title, list, opts){
+    opts = opts || {};
+    document.getElementById('monthNav').style.display = 'none';
+    document.getElementById('weekdayRow').style.display = 'none';
+    document.getElementById('boardWrap').style.display = 'none';
+    document.getElementById('noDatePanel').style.display = 'none';
+    const flat = document.getElementById('flatView');
+    flat.style.display = 'flex';
+    flat.innerHTML = '';
+    const heading = document.createElement('h2');
+    heading.style.cssText = 'font-size:16px; font-weight:750; margin:0 0 4px; letter-spacing:-.01em;';
+    heading.textContent = title;
+    flat.appendChild(heading);
+    if(list.length === 0){
+      const empty = document.createElement('div');
+      empty.className = 'empty-day';
+      empty.style.cssText = 'padding:28px 6px; font-size:13px; text-align:left;';
+      empty.textContent = opts.emptyText || 'Brak zadań';
+      flat.appendChild(empty);
+    } else {
+      list.forEach(t => flat.appendChild(buildTaskCard(t, {showDate: opts.showDate})));
+    }
+  }
 
-    const dated = tasks.filter(t => t.day);
-    const noDateTasks = tasks.filter(t => !t.day)
+  function hideFlatView(){
+    document.getElementById('flatView').style.display = 'none';
+    document.getElementById('boardWrap').style.display = '';
+    document.getElementById('noDatePanel').style.display = '';
+  }
+
+  function renderDayColumn(dayDate, activeTasks, todayKey, opts){
+    opts = opts || {};
+    const dayKey = dateKey(dayDate);
+    const isToday = dayKey === todayKey;
+    const dayTasks = activeTasks.filter(t => taskOccursOn(t, dayDate))
       .sort((a,b)=> (URGENCY_ORDER[a.urgency]-URGENCY_ORDER[b.urgency]) || (a.title.localeCompare(b.title,'pl')));
 
-    // No-date sidebar
+    const col = document.createElement('div');
+    col.className = 'day-col' + (isToday ? ' today' : '') + (opts.outside ? ' outside' : '');
+    let label = `${dayDate.getDate()}${isToday ? ' · dziś' : ''}`;
+    if(opts.big){
+      label = dayDate.toLocaleDateString('pl-PL', {weekday:'long', day:'numeric', month:'long'});
+      label = label.charAt(0).toUpperCase() + label.slice(1);
+    }
+    col.innerHTML = `
+      <div class="day-head">
+        <div class="name">${label}</div>
+        <div class="day-count">${dayTasks.length}</div>
+      </div>
+      <div class="day-body"></div>
+    `;
+    const body = col.querySelector('.day-body');
+    if(dayTasks.length === 0){
+      body.innerHTML = `<div class="empty-day">Brak zadań</div>`;
+    } else {
+      dayTasks.forEach(t => body.appendChild(buildTaskCard(t)));
+    }
+    board.appendChild(col);
+  }
+
+  function setupMonthNav(){
+    document.getElementById('prevMonth').setAttribute('aria-label','Poprzedni miesiąc');
+    document.getElementById('nextMonth').setAttribute('aria-label','Następny miesiąc');
+    document.getElementById('prevMonth').onclick = ()=>{ viewMonth--; if(viewMonth<0){viewMonth=11; viewYear--;} render(); };
+    document.getElementById('nextMonth').onclick = ()=>{ viewMonth++; if(viewMonth>11){viewMonth=0; viewYear++;} render(); };
+    document.getElementById('gotoToday').onclick = ()=>{ viewYear = today.getFullYear(); viewMonth = today.getMonth(); render(); };
+  }
+  function renderNoDateSidebar(activeTasks){
+    const noDateTasks = activeTasks.filter(t => !t.day)
+      .sort((a,b)=> (URGENCY_ORDER[a.urgency]-URGENCY_ORDER[b.urgency]) || (a.title.localeCompare(b.title,'pl')));
     const noDateList = document.getElementById('noDateList');
     document.getElementById('noDateCount').textContent = noDateTasks.length;
     noDateList.innerHTML = '';
@@ -651,18 +870,38 @@
     } else {
       noDateTasks.forEach(t => noDateList.appendChild(buildTaskCard(t)));
     }
+  }
 
-    // stats: dated tasks in the month currently on screen + all no-date tasks
-    const monthStart = new Date(viewYear, viewMonth, 1);
-    const monthEnd = new Date(viewYear, viewMonth + 1, 0);
-    const monthStartKey = dateKey(monthStart), monthEndKey = dateKey(monthEnd);
-    const visible = dated.filter(t => t.day >= monthStartKey && t.day <= monthEndKey).concat(noDateTasks);
+  function setupWeekNav(){
+    document.getElementById('prevMonth').setAttribute('aria-label','Poprzedni tydzień');
+    document.getElementById('nextMonth').setAttribute('aria-label','Następny tydzień');
+    document.getElementById('prevMonth').onclick = ()=>{ viewWeekStart = new Date(viewWeekStart); viewWeekStart.setDate(viewWeekStart.getDate()-7); render(); };
+    document.getElementById('nextMonth').onclick = ()=>{ viewWeekStart = new Date(viewWeekStart); viewWeekStart.setDate(viewWeekStart.getDate()+7); render(); };
+    document.getElementById('gotoToday').onclick = ()=>{ viewWeekStart = mondayOfWeek(today); render(); };
+  }
 
-    document.getElementById('cntAll').textContent = visible.length;
-    document.getElementById('cntPilne').textContent = tasks.filter(t=>t.urgency==='Pilne' && t.status!=='Zrobione').length;
+  function render(){
+    const allTasks = loadTasks();
+    const todayKey = dateKey(today);
+    const activeTasks = allTasks.filter(t => t.status !== 'Zrobione');
+    const archiveTasks = allTasks.filter(t => t.status === 'Zrobione')
+      .sort((a,b)=> (b.day||'').localeCompare(a.day||'') || a.title.localeCompare(b.title,'pl'));
+    const overdueTasks = activeTasks.filter(t => t.day && (!t.recurrence || t.recurrence==='none') && t.day < todayKey)
+      .sort((a,b)=> a.day.localeCompare(b.day));
 
-    board.innerHTML = '';
-    if(tasks.length === 0){
+    updateBadge('overdueBadge', overdueTasks.length);
+    updateBadge('archiveBadge', archiveTasks.length);
+    document.getElementById('cntAll').textContent = activeTasks.length;
+    document.getElementById('cntPilne').textContent = activeTasks.filter(t=>t.urgency==='Pilne').length;
+
+    board.className = 'board';
+    board.style.display = 'grid';
+
+    if(allTasks.length === 0){
+      hideFlatView();
+      document.getElementById('monthNav').style.display = 'none';
+      document.getElementById('weekdayRow').style.display = 'none';
+      document.getElementById('noDatePanel').style.display = 'none';
       board.style.display = 'block';
       board.innerHTML = `<div class="global-empty">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
@@ -671,40 +910,68 @@
       </div>`;
       return;
     }
-    board.style.display = 'grid';
 
-    // Full month grid: from the Monday of the week containing the 1st,
-    // through the Sunday of the week containing the last day of the month.
+    // Search overrides whichever tab is selected, without switching tabs.
+    const q = searchQuery.trim().toLocaleLowerCase('pl');
+    if(q){
+      const results = allTasks.filter(t => t.title.toLocaleLowerCase('pl').includes(q))
+        .sort((a,b)=> (a.day || '9999-99-99').localeCompare(b.day || '9999-99-99'));
+      showFlatView(`Wyniki wyszukiwania: „${searchQuery.trim()}”`, results, {showDate:true, emptyText:'Brak zadań pasujących do wyszukiwania'});
+      return;
+    }
+
+    if(viewMode === 'overdue'){
+      showFlatView('Zaległe zadania', overdueTasks, {showDate:true, emptyText:'Brak zaległych zadań — wszystko na czas 🎉'});
+      return;
+    }
+    if(viewMode === 'archive'){
+      showFlatView('Ukończone zadania', archiveTasks, {showDate:true, emptyText:'Archiwum jest puste'});
+      return;
+    }
+
+    hideFlatView();
+    renderNoDateSidebar(activeTasks);
+
+    if(viewMode === 'today'){
+      document.getElementById('monthNav').style.display = 'none';
+      document.getElementById('weekdayRow').style.display = 'none';
+      board.className = 'board single';
+      board.innerHTML = '';
+      renderDayColumn(today, activeTasks, todayKey, {big:true});
+      return;
+    }
+
+    if(viewMode === 'week'){
+      document.getElementById('monthNav').style.display = 'flex';
+      document.getElementById('weekdayRow').style.display = 'grid';
+      setupWeekNav();
+      const weekEnd = new Date(viewWeekStart); weekEnd.setDate(viewWeekStart.getDate()+6);
+      document.getElementById('monthLabel').textContent = `${fmtDayShort(dateKey(viewWeekStart))} – ${fmtDayShort(dateKey(weekEnd))}`;
+      board.innerHTML = '';
+      for(let i=0; i<7; i++){
+        const dayDate = new Date(viewWeekStart); dayDate.setDate(viewWeekStart.getDate()+i);
+        renderDayColumn(dayDate, activeTasks, todayKey, {});
+      }
+      return;
+    }
+
+    // month (default)
+    document.getElementById('monthNav').style.display = 'flex';
+    document.getElementById('weekdayRow').style.display = 'grid';
+    setupMonthNav();
+    document.getElementById('monthLabel').textContent = `${MONTH_NAMES[viewMonth]} ${viewYear}`;
+
+    const monthStart = new Date(viewYear, viewMonth, 1);
+    const monthEnd = new Date(viewYear, viewMonth + 1, 0);
     const gridStart = mondayOfWeek(monthStart);
     const lastWeekMonday = mondayOfWeek(monthEnd);
     const gridEnd = new Date(lastWeekMonday); gridEnd.setDate(lastWeekMonday.getDate() + 6);
     const totalDays = Math.round((gridEnd - gridStart) / 86400000) + 1;
 
+    board.innerHTML = '';
     for(let i=0; i<totalDays; i++){
       const dayDate = new Date(gridStart); dayDate.setDate(gridStart.getDate()+i);
-      const dayKey = dateKey(dayDate);
-      const isToday = dayKey === todayKey;
-      const isOutside = dayDate.getMonth() !== viewMonth;
-
-      const dayTasks = dated.filter(t => t.day === dayKey)
-        .sort((a,b)=> (URGENCY_ORDER[a.urgency]-URGENCY_ORDER[b.urgency]) || (a.title.localeCompare(b.title,'pl')));
-
-      const col = document.createElement('div');
-      col.className = 'day-col' + (isToday ? ' today' : '') + (isOutside ? ' outside' : '');
-      col.innerHTML = `
-        <div class="day-head">
-          <div class="name">${dayDate.getDate()}${isToday ? ' · dziś' : ''}</div>
-          <div class="day-count">${dayTasks.length}</div>
-        </div>
-        <div class="day-body"></div>
-      `;
-      const body = col.querySelector('.day-body');
-      if(dayTasks.length === 0){
-        body.innerHTML = `<div class="empty-day">Brak zadań</div>`;
-      } else {
-        dayTasks.forEach(t => body.appendChild(buildTaskCard(t)));
-      }
-      board.appendChild(col);
+      renderDayColumn(dayDate, activeTasks, todayKey, {outside: dayDate.getMonth() !== viewMonth});
     }
   }
 
@@ -732,13 +999,21 @@
   const fDay = document.getElementById('fDay');
   const fTime = document.getElementById('fTime');
   const fNoDate = document.getElementById('fNoDate');
+  const fRecurring = document.getElementById('fRecurring');
+  const fRecurrence = document.getElementById('fRecurrence');
 
+  function applyRecurringState(on){
+    document.getElementById('fRecurrenceField').style.display = on ? 'flex' : 'none';
+  }
   function applyNoDateState(noDate){
     fDay.disabled = noDate;
     fTime.disabled = noDate;
     document.getElementById('fTimeField').style.opacity = noDate ? .45 : 1;
     document.getElementById('fTimeField').style.pointerEvents = noDate ? 'none' : 'auto';
     if(noDate){ fDay.removeAttribute('required'); } else { fDay.setAttribute('required','required'); }
+    // Recurring tasks need a start date, so the two options are mutually exclusive.
+    document.getElementById('fRecurringRow').style.display = noDate ? 'none' : 'flex';
+    if(noDate){ fRecurring.checked = false; applyRecurringState(false); }
   }
 
   function openModal(task){
@@ -752,6 +1027,12 @@
     fDay.value = task ? (task.day || '') : dateKey(new Date());
     fTime.value = task ? (task.time || '') : '';
     applyNoDateState(fNoDate.checked);
+
+    const hasRecurrence = task && task.recurrence && task.recurrence !== 'none';
+    fRecurring.checked = !fNoDate.checked && !!hasRecurrence;
+    fRecurrence.value = hasRecurrence ? task.recurrence : 'weekly';
+    applyRecurringState(fRecurring.checked);
+
     document.getElementById('fStatus').value = task ? task.status : 'Do zrobienia';
     document.getElementById('fDesc').value = task ? (task.description || '') : '';
 
@@ -765,12 +1046,14 @@
     overlay.classList.remove('open');
     form.reset();
     applyNoDateState(false);
+    applyRecurringState(false);
     editingId = null;
     urgencyVal = 'Średnia';
     document.querySelectorAll('.urgency-opt').forEach(o=>o.classList.toggle('active', o.dataset.val==='Średnia'));
   }
 
   fNoDate.addEventListener('change', ()=> applyNoDateState(fNoDate.checked));
+  fRecurring.addEventListener('change', ()=> applyRecurringState(fRecurring.checked));
 
   document.getElementById('openAddTop').addEventListener('click', ()=>openModal());
   document.getElementById('openAddFab').addEventListener('click', ()=>openModal());
@@ -809,6 +1092,7 @@
     const difficulty = document.getElementById('fDiff').value;
     const day = fNoDate.checked ? '' : fDay.value;
     const time = fNoDate.checked ? '' : fTime.value;
+    const recurrence = (!fNoDate.checked && fRecurring.checked) ? fRecurrence.value : 'none';
     const status = document.getElementById('fStatus').value;
     const description = document.getElementById('fDesc').value.trim();
     if(!title) return;
@@ -819,16 +1103,17 @@
       const idx = tasks.findIndex(x=>x.id===editingId);
       if(idx !== -1){
         const prev = tasks[idx];
-        // Reset the fired-reminder marker whenever day/time actually changed,
-        // so an edited task can alert again.
-        const notifiedAt = (prev.day===day && prev.time===time) ? prev.notifiedAt : null;
-        tasks[idx] = { ...prev, title, difficulty, urgency: urgencyVal, day, time, status, description, notifiedAt };
+        // Reset the fired-reminder marker whenever day/time/recurrence actually
+        // changed, so an edited task can alert again.
+        const sameSchedule = prev.day===day && prev.time===time && prev.recurrence===recurrence;
+        const notifiedAt = sameSchedule ? prev.notifiedAt : null;
+        tasks[idx] = { ...prev, title, difficulty, urgency: urgencyVal, day, time, recurrence, status, description, notifiedAt };
       }
       saveTasks(tasks);
       closeModal();
       showToast('Zadanie zostało zaktualizowane');
     } else {
-      tasks.push({ id: uid(), title, difficulty, urgency: urgencyVal, day, time, status, description, createdAt: Date.now(), notifiedAt: null });
+      tasks.push({ id: uid(), title, difficulty, urgency: urgencyVal, day, time, recurrence, status, description, createdAt: Date.now(), notifiedAt: null });
       saveTasks(tasks);
       closeModal();
       showToast('Zadanie zostało dodane');
@@ -881,7 +1166,7 @@
     let changed = false;
     tasks.forEach(t=>{
       if(!t.time || t.status === 'Zrobione') return;
-      if(t.day !== todayKey) return;
+      if(!taskOccursOn(t, now)) return;
       if(t.time !== hhmm) return;
       if(t.notifiedAt === todayKey + t.time) return; // already fired for this minute
 
@@ -912,18 +1197,22 @@
 
   // Weekday header (built once — always Mon–Sun regardless of viewed month)
   document.getElementById('weekdayRow').innerHTML = DAY_NAMES.map(n=>`<span>${n.slice(0,3)}</span>`).join('');
+  // Month/week nav button handlers are (re)assigned per render by
+  // setupMonthNav()/setupWeekNav(), since the two modes drive different state.
 
-  // Month navigation
-  document.getElementById('prevMonth').addEventListener('click', ()=>{
-    viewMonth--; if(viewMonth < 0){ viewMonth = 11; viewYear--; }
-    render();
+  // View tabs (Dziś / Tydzień / Miesiąc / Zaległe / Archiwum)
+  document.querySelectorAll('.view-tab').forEach(btn=>{
+    if(btn.dataset.view === viewMode) btn.classList.add('active');
+    btn.addEventListener('click', ()=>{
+      viewMode = btn.dataset.view;
+      document.querySelectorAll('.view-tab').forEach(b=>b.classList.toggle('active', b===btn));
+      render();
+    });
   });
-  document.getElementById('nextMonth').addEventListener('click', ()=>{
-    viewMonth++; if(viewMonth > 11){ viewMonth = 0; viewYear++; }
-    render();
-  });
-  document.getElementById('gotoToday').addEventListener('click', ()=>{
-    viewYear = today.getFullYear(); viewMonth = today.getMonth();
+
+  // Search — filters by title across every task, live, without switching tabs
+  document.getElementById('searchInput').addEventListener('input', function(){
+    searchQuery = this.value;
     render();
   });
 
