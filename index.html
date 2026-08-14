@@ -77,6 +77,10 @@
   }
   .stat-pill b{color:var(--ink); font-weight:700;}
   .dot{width:7px; height:7px; border-radius:50%; flex-shrink:0;}
+  .stat-pill-btn{
+    cursor:pointer; font-family:inherit; transition:transform .12s ease, box-shadow .12s ease;
+  }
+  .stat-pill-btn:hover{transform:translateY(-1px); box-shadow:var(--shadow-md);}
 
   .btn-primary{
     display:inline-flex; align-items:center; gap:8px;
@@ -91,7 +95,6 @@
   .btn-primary:active{transform:translateY(0px) scale(.98);}
   .btn-primary svg{width:16px; height:16px;}
 
-  /* Board */
   /* Month navigation */
   .month-nav{
     display:flex; align-items:center; gap:10px; margin-bottom:14px;
@@ -124,6 +127,21 @@
     text-transform:uppercase; letter-spacing:.03em; text-align:left; padding-left:2px;
   }
 
+  /* Layout: no-date sidebar + calendar */
+  .calendar-layout{display:flex; gap:18px; align-items:flex-start;}
+  .calendar-main{flex:1; min-width:0;}
+
+  .no-date-panel{
+    width:236px; flex-shrink:0;
+    background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius);
+    overflow:hidden;
+  }
+  .no-date-head{
+    padding:12px 14px 10px; display:flex; align-items:center; justify-content:space-between;
+    font-size:12.5px; font-weight:700; color:var(--ink-soft);
+  }
+  .no-date-list{padding:0 10px 12px; display:flex; flex-direction:column; gap:6px; max-height:min(70vh, 700px); overflow-y:auto;}
+
   /* Month grid */
   .board{
     display:grid;
@@ -133,6 +151,9 @@
   @media (max-width:900px){
     .board{grid-template-columns:repeat(1, 1fr);}
     .weekday-row{display:none;}
+    .calendar-layout{flex-direction:column;}
+    .no-date-panel{width:100%;}
+    .no-date-list{max-height:none;}
   }
 
   .day-col{
@@ -307,6 +328,12 @@
     background-repeat:no-repeat; background-position:right 12px center; padding-right:32px;
   }
 
+  .checkbox-row{
+    display:flex; align-items:center; gap:8px; margin-top:-6px;
+    font-size:12.5px; font-weight:600; color:var(--ink-soft); cursor:pointer; user-select:none;
+  }
+  .checkbox-row input{width:15px; height:15px; accent-color:var(--accent); cursor:pointer; flex-shrink:0;}
+
   .urgency-select{display:flex; gap:8px;}
   .urgency-opt{
     flex:1; text-align:center; padding:9px 4px; border-radius:9px; cursor:pointer;
@@ -330,6 +357,17 @@
     box-shadow:0 8px 20px -6px rgba(61,92,255,.5);
   }
   .btn-submit:hover{background:#3352f0;}
+
+  .urgent-list{
+    padding:2px 26px 26px; display:flex; flex-direction:column; gap:9px;
+    max-height:65vh; overflow-y:auto;
+  }
+  .urgent-list .empty-day{padding:24px 6px; font-size:13px;}
+  .task-day{
+    display:inline-flex; align-items:center; gap:4px;
+    font-size:10.5px; font-weight:700; color:var(--accent);
+    background:var(--accent-soft); padding:3px 7px; border-radius:6px;
+  }
 
   .toast{
     position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(20px);
@@ -368,7 +406,9 @@
         <svg viewBox="0 0 24 24" fill="none" width="13" height="13"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 7v5l3.2 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
         <b id="liveClock">--:--</b>
       </div>
-      <div class="stat-pill" id="statPilne"><span class="dot" style="background:var(--urgent)"></span> <b id="cntPilne">0</b> pilnych</div>
+      <button class="stat-pill stat-pill-btn" id="statPilne" type="button" title="Pokaż listę pilnych zadań">
+        <span class="dot" style="background:var(--urgent)"></span> <b id="cntPilne">0</b> pilnych
+      </button>
       <div class="stat-pill" id="statAll"><span class="dot" style="background:var(--accent)"></span> <b id="cntAll">0</b> zadań</div>
       <button class="btn-primary" id="openAddTop">
         <svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
@@ -388,10 +428,20 @@
     <button class="chip-today" id="gotoToday">Dziś</button>
   </div>
 
-  <div class="weekday-row" id="weekdayRow"></div>
-
-  <div id="boardWrap">
-    <div class="board" id="board"></div>
+  <div class="calendar-layout">
+    <aside class="no-date-panel">
+      <div class="no-date-head">
+        <span>Bez terminu</span>
+        <div class="day-count" id="noDateCount">0</div>
+      </div>
+      <div class="no-date-list" id="noDateList"></div>
+    </aside>
+    <div class="calendar-main">
+      <div class="weekday-row" id="weekdayRow"></div>
+      <div id="boardWrap">
+        <div class="board" id="board"></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -426,7 +476,11 @@
           <input type="date" id="fDay" required>
         </div>
       </div>
-      <div class="field">
+      <label class="checkbox-row" for="fNoDate">
+        <input type="checkbox" id="fNoDate">
+        To zadanie nie ma konkretnego terminu
+      </label>
+      <div class="field" id="fTimeField">
         <label for="fTime">Godzina przypomnienia <span style="font-weight:500; color:var(--ink-faint);">(opcjonalnie — zagra dźwięk o tej porze)</span></label>
         <input type="time" id="fTime">
       </div>
@@ -456,6 +510,18 @@
         <button type="submit" class="btn-submit" id="submitBtn">Dodaj zadanie</button>
       </div>
     </form>
+  </div>
+</div>
+
+<div class="overlay" id="urgentOverlay">
+  <div class="modal">
+    <div class="modal-head">
+      <h2>Pilne zadania</h2>
+      <button class="modal-close" id="closeUrgent" aria-label="Zamknij">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <div class="urgent-list" id="urgentList"></div>
   </div>
 </div>
 
@@ -524,20 +590,76 @@
     return '';
   }
 
+  function fmtDayShort(dayKeyStr){
+    const [y,m,d] = dayKeyStr.split('-').map(Number);
+    return new Date(y, m-1, d).toLocaleDateString('pl-PL', {day:'2-digit', month:'2-digit'});
+  }
+
+  // Builds one task card. `showDate` adds a small date chip — used in the
+  // no-date sidebar's "Zaplanuj" hint and in the pilne-zadania list, where
+  // the surrounding context alone doesn't say which day a task belongs to.
+  function buildTaskCard(t, opts){
+    opts = opts || {};
+    const card = document.createElement('div');
+    card.className = 'task ' + URG_CLASS[t.urgency] + (t.status==='Zrobione' ? ' is-done' : '');
+    card.dataset.id = t.id;
+    card.title = t.description || '';
+    card.innerHTML = `
+      <div class="task-top">
+        <div class="task-title">${escapeHtml(t.title)}</div>
+        <div class="urg-icon" title="Pilność: ${t.urgency}">${ICONS[t.urgency]}</div>
+      </div>
+      <div class="task-meta">
+        <span class="badge diff-${t.difficulty}">${t.difficulty}</span>
+        <span class="badge status-badge ${statusClass(t.status)}">${t.status}</span>
+        ${t.time ? `<span class="task-time"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>${t.time}</span>` : ''}
+        ${opts.showDate ? `<span class="task-day">${t.day ? fmtDayShort(t.day) : 'Bez terminu'}</span>` : ''}
+      </div>
+      <div class="task-foot">
+        <button class="task-del" data-id="${t.id}" aria-label="Usuń zadanie" title="Usuń">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M4 7h16M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2m2 0l-1 13a2 2 0 01-2 2H9a2 2 0 01-2-2L6 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    `;
+    card.querySelector('.task-del').addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const all = loadTasks().filter(x=>x.id!==t.id);
+      saveTasks(all);
+      closeUrgentModal();
+      render();
+    });
+    card.addEventListener('click', ()=>{ closeUrgentModal(); openModal(t); });
+    return card;
+  }
+
   function render(){
     const tasks = loadTasks();
     const todayKey = dateKey(today);
 
     document.getElementById('monthLabel').textContent = `${MONTH_NAMES[viewMonth]} ${viewYear}`;
 
-    // stats reflect the month currently on screen
+    const dated = tasks.filter(t => t.day);
+    const noDateTasks = tasks.filter(t => !t.day)
+      .sort((a,b)=> (URGENCY_ORDER[a.urgency]-URGENCY_ORDER[b.urgency]) || (a.title.localeCompare(b.title,'pl')));
+
+    // No-date sidebar
+    const noDateList = document.getElementById('noDateList');
+    document.getElementById('noDateCount').textContent = noDateTasks.length;
+    noDateList.innerHTML = '';
+    if(noDateTasks.length === 0){
+      noDateList.innerHTML = `<div class="empty-day">Brak zadań bez terminu</div>`;
+    } else {
+      noDateTasks.forEach(t => noDateList.appendChild(buildTaskCard(t)));
+    }
+
+    // stats: dated tasks in the month currently on screen + all no-date tasks
     const monthStart = new Date(viewYear, viewMonth, 1);
     const monthEnd = new Date(viewYear, viewMonth + 1, 0);
     const monthStartKey = dateKey(monthStart), monthEndKey = dateKey(monthEnd);
-    const visible = tasks.filter(t => t.day >= monthStartKey && t.day <= monthEndKey);
+    const visible = dated.filter(t => t.day >= monthStartKey && t.day <= monthEndKey).concat(noDateTasks);
 
     document.getElementById('cntAll').textContent = visible.length;
-    document.getElementById('cntPilne').textContent = visible.filter(t=>t.urgency==='Pilne' && t.status!=='Zrobione').length;
+    document.getElementById('cntPilne').textContent = tasks.filter(t=>t.urgency==='Pilne' && t.status!=='Zrobione').length;
 
     board.innerHTML = '';
     if(tasks.length === 0){
@@ -564,7 +686,7 @@
       const isToday = dayKey === todayKey;
       const isOutside = dayDate.getMonth() !== viewMonth;
 
-      const dayTasks = tasks.filter(t => t.day === dayKey)
+      const dayTasks = dated.filter(t => t.day === dayKey)
         .sort((a,b)=> (URGENCY_ORDER[a.urgency]-URGENCY_ORDER[b.urgency]) || (a.title.localeCompare(b.title,'pl')));
 
       const col = document.createElement('div');
@@ -580,39 +702,26 @@
       if(dayTasks.length === 0){
         body.innerHTML = `<div class="empty-day">Brak zadań</div>`;
       } else {
-        dayTasks.forEach(t=>{
-          const card = document.createElement('div');
-          card.className = 'task ' + URG_CLASS[t.urgency] + (t.status==='Zrobione' ? ' is-done' : '');
-          card.dataset.id = t.id;
-          card.title = t.description || '';
-          card.innerHTML = `
-            <div class="task-top">
-              <div class="task-title">${escapeHtml(t.title)}</div>
-              <div class="urg-icon" title="Pilność: ${t.urgency}">${ICONS[t.urgency]}</div>
-            </div>
-            <div class="task-meta">
-              <span class="badge diff-${t.difficulty}">${t.difficulty}</span>
-              <span class="badge status-badge ${statusClass(t.status)}">${t.status}</span>
-              ${t.time ? `<span class="task-time"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>${t.time}</span>` : ''}
-            </div>
-            <div class="task-foot">
-              <button class="task-del" data-id="${t.id}" aria-label="Usuń zadanie" title="Usuń">
-                <svg viewBox="0 0 24 24" fill="none"><path d="M4 7h16M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2m2 0l-1 13a2 2 0 01-2 2H9a2 2 0 01-2-2L6 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              </button>
-            </div>
-          `;
-          card.querySelector('.task-del').addEventListener('click', (e)=>{
-            e.stopPropagation();
-            const all = loadTasks().filter(x=>x.id!==t.id);
-            saveTasks(all);
-            render();
-          });
-          card.addEventListener('click', ()=> openModal(t));
-          body.appendChild(card);
-        });
+        dayTasks.forEach(t => body.appendChild(buildTaskCard(t)));
       }
       board.appendChild(col);
     }
+  }
+
+  function closeUrgentModal(){
+    document.getElementById('urgentOverlay').classList.remove('open');
+  }
+  function openUrgentModal(){
+    const list = document.getElementById('urgentList');
+    const urgentTasks = loadTasks().filter(t=>t.urgency==='Pilne' && t.status!=='Zrobione')
+      .sort((a,b)=> (a.day || '9999-99-99').localeCompare(b.day || '9999-99-99'));
+    list.innerHTML = '';
+    if(urgentTasks.length === 0){
+      list.innerHTML = `<div class="empty-day">Brak pilnych zadań — wszystko na spokojnie 🎉</div>`;
+    } else {
+      urgentTasks.forEach(t => list.appendChild(buildTaskCard(t, {showDate:true})));
+    }
+    document.getElementById('urgentOverlay').classList.add('open');
   }
 
   function escapeHtml(s){
@@ -620,6 +729,18 @@
   }
 
   // Modal open/close — pass a task to edit it, or nothing to add a new one
+  const fDay = document.getElementById('fDay');
+  const fTime = document.getElementById('fTime');
+  const fNoDate = document.getElementById('fNoDate');
+
+  function applyNoDateState(noDate){
+    fDay.disabled = noDate;
+    fTime.disabled = noDate;
+    document.getElementById('fTimeField').style.opacity = noDate ? .45 : 1;
+    document.getElementById('fTimeField').style.pointerEvents = noDate ? 'none' : 'auto';
+    if(noDate){ fDay.removeAttribute('required'); } else { fDay.setAttribute('required','required'); }
+  }
+
   function openModal(task){
     editingId = task ? task.id : null;
     document.getElementById('modalTitle').textContent = task ? 'Edytuj zadanie' : 'Nowe zadanie';
@@ -627,8 +748,10 @@
 
     document.getElementById('fTitle').value = task ? task.title : '';
     document.getElementById('fDiff').value = task ? task.difficulty : 'Średnie';
-    document.getElementById('fDay').value = task ? task.day : dateKey(new Date());
-    document.getElementById('fTime').value = task ? (task.time || '') : '';
+    fNoDate.checked = task ? !task.day : false;
+    fDay.value = task ? (task.day || '') : dateKey(new Date());
+    fTime.value = task ? (task.time || '') : '';
+    applyNoDateState(fNoDate.checked);
     document.getElementById('fStatus').value = task ? task.status : 'Do zrobienia';
     document.getElementById('fDesc').value = task ? (task.description || '') : '';
 
@@ -641,17 +764,30 @@
   function closeModal(){
     overlay.classList.remove('open');
     form.reset();
+    applyNoDateState(false);
     editingId = null;
     urgencyVal = 'Średnia';
     document.querySelectorAll('.urgency-opt').forEach(o=>o.classList.toggle('active', o.dataset.val==='Średnia'));
   }
+
+  fNoDate.addEventListener('change', ()=> applyNoDateState(fNoDate.checked));
 
   document.getElementById('openAddTop').addEventListener('click', ()=>openModal());
   document.getElementById('openAddFab').addEventListener('click', ()=>openModal());
   document.getElementById('closeModal').addEventListener('click', closeModal);
   document.getElementById('cancelModal').addEventListener('click', closeModal);
   overlay.addEventListener('click', (e)=>{ if(e.target === overlay) closeModal(); });
-  document.addEventListener('keydown', (e)=>{ if(e.key==='Escape' && overlay.classList.contains('open')) closeModal(); });
+  document.addEventListener('keydown', (e)=>{
+    if(e.key !== 'Escape') return;
+    if(overlay.classList.contains('open')) closeModal();
+    if(document.getElementById('urgentOverlay').classList.contains('open')) closeUrgentModal();
+  });
+
+  document.getElementById('statPilne').addEventListener('click', openUrgentModal);
+  document.getElementById('closeUrgent').addEventListener('click', closeUrgentModal);
+  document.getElementById('urgentOverlay').addEventListener('click', (e)=>{
+    if(e.target.id === 'urgentOverlay') closeUrgentModal();
+  });
 
   document.getElementById('urgencySelect').addEventListener('click', (e)=>{
     const opt = e.target.closest('.urgency-opt');
@@ -671,11 +807,12 @@
     e.preventDefault();
     const title = document.getElementById('fTitle').value.trim();
     const difficulty = document.getElementById('fDiff').value;
-    const day = document.getElementById('fDay').value;
-    const time = document.getElementById('fTime').value;
+    const day = fNoDate.checked ? '' : fDay.value;
+    const time = fNoDate.checked ? '' : fTime.value;
     const status = document.getElementById('fStatus').value;
     const description = document.getElementById('fDesc').value.trim();
-    if(!title || !day) return;
+    if(!title) return;
+    if(!fNoDate.checked && !day) return;
 
     const tasks = loadTasks();
     if(editingId){
