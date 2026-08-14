@@ -97,6 +97,18 @@
   .brand-text h1{font-size:21px; margin:0; font-weight:700; letter-spacing:-0.01em;}
   .brand-text p{margin:1px 0 0; font-size:14px; color:var(--ink-faint);}
 
+  .calendar-switch{
+    display:flex; gap:2px; background:var(--surface-2); border:1px solid var(--border);
+    border-radius:11px; padding:3px; margin-left:22px;
+  }
+  .cal-btn{
+    border:none; background:none; color:var(--ink-soft); cursor:pointer;
+    font-size:13px; font-weight:650; padding:7px 14px; border-radius:8px;
+    font-family:inherit; transition:all .15s ease; white-space:nowrap;
+  }
+  .cal-btn:hover{color:var(--ink);}
+  .cal-btn.active{background:var(--surface); color:var(--ink); box-shadow:var(--shadow-sm);}
+
   .top-actions{display:flex; align-items:center; gap:10px;}
 
   .stat-pill{
@@ -190,6 +202,15 @@
   }
   .view-tab.active .tab-badge{background:rgba(255,255,255,.28);}
 
+  .sort-wrap{
+    display:flex; align-items:center; gap:7px; margin-left:auto;
+    font-size:13px; color:var(--ink-soft); font-weight:600;
+  }
+  .sort-wrap select{
+    width:auto; padding:6px 28px 6px 10px; font-size:13px; border-radius:9px;
+    background-color:var(--surface);
+  }
+
   .flat-view{
     display:flex; flex-direction:column; gap:9px; max-width:640px;
   }
@@ -200,6 +221,36 @@
   }
   .recur-badge svg{width:11px; height:11px;}
   .task.is-overdue{border-color:var(--urgent);}
+
+  .cat-icon{
+    flex-shrink:0; width:20px; height:20px; border-radius:6px;
+    display:flex; align-items:center; justify-content:center; margin-top:1px;
+    background:var(--surface-2); color:var(--ink-soft);
+  }
+  .cat-icon svg{width:12px; height:12px;}
+  .cat-badge{background:var(--surface-2); color:var(--ink-soft); border:1px solid var(--border);}
+
+  /* Compact calendar chip: what a task collapses into inside the day grid,
+     so a busy day stays a short list of glanceable rows instead of a stack
+     of full cards stretching the box tall. Hover still gets the full
+     preview popup; click still opens the same edit modal as a full card. */
+  .task-chip{
+    display:flex; align-items:center; gap:5px;
+    padding:4px 7px; border-radius:7px; cursor:pointer;
+    font-size:12px; font-weight:650; line-height:1.3;
+    transition:transform .1s ease, box-shadow .1s ease;
+  }
+  .task-chip:hover{transform:translateX(1px); box-shadow:var(--shadow-sm);}
+  .task-chip.u-pilne{background:var(--urgent-soft); color:var(--urgent);}
+  .task-chip.u-wysoka{background:var(--high-soft); color:var(--high);}
+  .task-chip.u-srednia{background:var(--mid-soft); color:var(--mid);}
+  .task-chip.u-niska{background:var(--low-soft); color:var(--low);}
+  .task-chip.is-overdue{box-shadow:inset 0 0 0 1.5px var(--urgent);}
+  .task-chip.is-done{opacity:.55;}
+  .task-chip.is-done .chip-title{text-decoration:line-through;}
+  .chip-icon{flex-shrink:0; width:13px; height:13px; display:flex;}
+  .chip-icon svg{width:13px; height:13px;}
+  .chip-title{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
 
   /* Month navigation */
   .month-nav{
@@ -292,7 +343,7 @@
     display:flex; align-items:center; justify-content:center;
   }
 
-  .day-body{padding:0 8px 10px; display:flex; flex-direction:column; gap:6px; flex:1;}
+  .day-body{padding:0 6px 8px; display:flex; flex-direction:column; gap:4px; flex:1;}
 
   .empty-day{
     margin:2px 2px 4px; padding:10px 6px;
@@ -487,6 +538,13 @@
     box-shadow:0 8px 20px -6px rgba(61,92,255,.5);
   }
   .btn-submit:hover{background:#3352f0;}
+  .btn-danger{
+    background:var(--urgent-soft); border:1.5px solid transparent; color:var(--urgent);
+    width:44px; border-radius:11px; cursor:pointer; display:flex; align-items:center; justify-content:center;
+    flex-shrink:0; transition:all .15s ease;
+  }
+  .btn-danger svg{width:16px; height:16px;}
+  .btn-danger:hover{background:var(--urgent); color:#fff;}
 
   .urgent-list{
     padding:2px 26px 26px; display:flex; flex-direction:column; gap:9px;
@@ -550,6 +608,10 @@
         <h1>Workflow</h1>
         <p>Panel zadań — cały miesiąc na raz</p>
       </div>
+      <div class="calendar-switch" id="calendarSwitch">
+        <button class="cal-btn" data-cal="praca" type="button">💼 Praca</button>
+        <button class="cal-btn" data-cal="prywatny" type="button">🏠 Prywatny</button>
+      </div>
     </div>
     <div class="top-actions">
       <div class="search-box">
@@ -587,6 +649,13 @@
     <button class="view-tab" data-view="month" type="button">Miesiąc</button>
     <button class="view-tab" data-view="overdue" type="button">Zaległe <span class="tab-badge" id="overdueBadge" style="display:none;">0</span></button>
     <button class="view-tab" data-view="archive" type="button">Archiwum <span class="tab-badge" id="archiveBadge" style="display:none;">0</span></button>
+    <div class="sort-wrap">
+      <label for="sortSelect">Sortuj:</label>
+      <select id="sortSelect">
+        <option value="urgency">Pilność</option>
+        <option value="category">Kategoria</option>
+      </select>
+    </div>
   </div>
 
   <div class="month-nav" id="monthNav">
@@ -645,9 +714,15 @@
           </select>
         </div>
         <div class="field">
-          <label for="fDay">Dzień realizacji</label>
-          <input type="date" id="fDay" required>
+          <label for="fCategory">Kategoria</label>
+          <select id="fCategory">
+            <option value="">Brak kategorii</option>
+          </select>
         </div>
+      </div>
+      <div class="field">
+        <label for="fDay">Dzień realizacji</label>
+        <input type="date" id="fDay" required>
       </div>
       <label class="checkbox-row" for="fNoDate">
         <input type="checkbox" id="fNoDate">
@@ -694,6 +769,9 @@
         <textarea id="fDesc" placeholder="Dodatkowe szczegóły, kontekst, linki…"></textarea>
       </div>
       <div class="modal-actions">
+        <button type="button" class="btn-danger" id="deleteFromModal" style="display:none;" aria-label="Usuń zadanie">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M4 7h16M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2m2 0l-1 13a2 2 0 01-2 2H9a2 2 0 01-2-2L6 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
         <button type="button" class="btn-ghost" id="cancelModal">Anuluj</button>
         <button type="submit" class="btn-submit" id="submitBtn">Dodaj zadanie</button>
       </div>
@@ -865,6 +943,29 @@
   };
   const URG_CLASS = {Pilne:'u-pilne', Wysoka:'u-wysoka', Średnia:'u-srednia', Niska:'u-niska'};
 
+  const CATEGORY_META = {
+    ESKLEP:      { icon:'<svg viewBox="0 0 24 24" fill="none"><path d="M3 4h2l2.4 12.4a2 2 0 002 1.6h8.6a2 2 0 002-1.6L21 8H6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="10" cy="20" r="1.3" fill="currentColor"/><circle cx="17" cy="20" r="1.3" fill="currentColor"/></svg>' },
+    MAIL:        { icon:'<svg viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M4 7l8 6 8-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>' },
+    OFERTA:      { icon:'<svg viewBox="0 0 24 24" fill="none"><path d="M7 3h7l4 4v14H7z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M14 3v4h4M9.5 12h5M9.5 15.5h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>' },
+    MAILING:     { icon:'<svg viewBox="0 0 24 24" fill="none"><path d="M3 10v4h3l5 4V6L6 10H3z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M16 9a4 4 0 010 6M19 6a8 8 0 010 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>' },
+    'PŁATNOŚCI': { icon:'<svg viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M3 10h18" stroke="currentColor" stroke-width="1.8"/><path d="M6.5 15h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>' },
+    ZAMÓWIENIE:  { icon:'<svg viewBox="0 0 24 24" fill="none"><path d="M3 8l9-5 9 5-9 5-9-5z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M3 8v8l9 5 9-5V8M12 13v8" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>' },
+    KOLEKCJA:    { icon:'<svg viewBox="0 0 24 24" fill="none"><path d="M12 3l8 4.5-8 4.5-8-4.5L12 3z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M4 12l8 4.5 8-4.5M4 16l8 4.5 8-4.5" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>' }
+  };
+  function categoryIcon(cat){ return cat && CATEGORY_META[cat] ? CATEGORY_META[cat].icon : ''; }
+
+  // Sorting: "pilność" (default) ranks by urgency; "kategoria" groups same
+  // category together first (uncategorized tasks sort last), urgency as tiebreak.
+  let currentSort = localStorage.getItem('workflow_v1_sort') || 'urgency';
+  function cmpUrgency(a,b){ return (URGENCY_ORDER[a.urgency]-URGENCY_ORDER[b.urgency]) || a.title.localeCompare(b.title,'pl'); }
+  function cmpCategory(a,b){ return (a.category||'￿').localeCompare(b.category||'￿','pl') || cmpUrgency(a,b); }
+  function sortTasks(list){ return list.slice().sort(currentSort==='category' ? cmpCategory : cmpUrgency); }
+
+  // Calendar: Praca (work) / Prywatny (private) — a single top-level filter
+  // that scopes the whole dashboard, not a per-view setting.
+  let activeCalendar = localStorage.getItem('workflow_v1_calendar') || 'praca';
+  function taskCalendar(t){ return t.calendar || 'praca'; } // tasks saved before this feature default to "praca"
+
   function statusClass(s){
     if(s === 'Zrobione') return 'done';
     if(s === 'W trakcie') return 'progress';
@@ -908,6 +1009,7 @@
       <div class="tp-meta">
         <span class="badge diff-${t.difficulty}">${t.difficulty}</span>
         <span class="badge status-badge ${statusClass(t.status)}">${t.status}</span>
+        ${t.category ? `<span class="badge cat-badge">${t.category}</span>` : ''}
         ${taskTimeLabel(t) ? `<span class="task-time">${taskTimeLabel(t)}</span>` : ''}
         <span class="task-day">${t.day ? fmtDayShort(t.day) : 'Bez terminu'}</span>
         ${isRecurring ? `<span class="badge status-badge">🔁 ${RECUR_LABEL[t.recurrence]}</span>` : ''}
@@ -950,6 +1052,7 @@
         <button class="task-check" data-id="${t.id}" aria-label="${t.status==='Zrobione' ? 'Cofnij ukończenie' : 'Oznacz jako zrobione'}" title="${t.status==='Zrobione' ? 'Cofnij ukończenie' : 'Oznacz jako zrobione'}">
           <svg viewBox="0 0 24 24" fill="none"><path d="M4 12l5 5L20 6" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
+        ${t.category ? `<span class="cat-icon" title="Kategoria: ${t.category}">${categoryIcon(t.category)}</span>` : ''}
         ${isRecurring ? `<span class="recur-badge" title="Zadanie cykliczne: ${RECUR_LABEL[t.recurrence]}"><svg viewBox="0 0 24 24" fill="none"><path d="M4 12a8 8 0 0114-5.3M20 12a8 8 0 01-14 5.3M17 4v4h-4M7 20v-4h4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>` : ''}
         <div class="task-title">${escapeHtml(t.title)}</div>
         <div class="urg-icon" title="Pilność: ${t.urgency}">${ICONS[t.urgency]}</div>
@@ -957,6 +1060,7 @@
       <div class="task-meta">
         <span class="badge diff-${t.difficulty}">${t.difficulty}</span>
         <span class="badge status-badge ${statusClass(t.status)}">${t.status}</span>
+        ${t.category ? `<span class="badge cat-badge">${t.category}</span>` : ''}
         ${taskTimeLabel(t) ? `<span class="task-time"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>${taskTimeLabel(t)}</span>` : ''}
         ${opts.showDate ? `<span class="task-day">${t.day ? fmtDayShort(t.day) : 'Bez terminu'}</span>` : ''}
       </div>
@@ -990,6 +1094,27 @@
     card.addEventListener('mouseenter', ()=> showTaskPreview(t, card));
     card.addEventListener('mouseleave', hideTaskPreview);
     return card;
+  }
+
+  // Compact calendar chip: colored by urgency, one line, icon + truncated
+  // title only. Same hover-preview and click-to-edit as a full card — it just
+  // skips the inline checkbox/delete controls to stay short; use the preview
+  // popup or the edit modal's delete button for those.
+  function buildTaskChip(t){
+    const isRecurring = t.recurrence && t.recurrence !== 'none';
+    const isOverdue = t.day && !isRecurring && t.status !== 'Zrobione' && t.day < dateKey(today);
+    const chip = document.createElement('div');
+    chip.className = 'task-chip ' + URG_CLASS[t.urgency] + (t.status==='Zrobione' ? ' is-done' : '') + (isOverdue ? ' is-overdue' : '');
+    chip.dataset.id = t.id;
+    const icon = categoryIcon(t.category) || ICONS[t.urgency];
+    chip.innerHTML = `
+      <span class="chip-icon">${icon}</span>
+      <span class="chip-title">${escapeHtml(t.title)}</span>
+    `;
+    chip.addEventListener('click', ()=>{ hideTaskPreview(); closeUrgentModal(); openModal(t); });
+    chip.addEventListener('mouseenter', ()=> showTaskPreview(t, chip));
+    chip.addEventListener('mouseleave', hideTaskPreview);
+    return chip;
   }
 
   function updateBadge(id, n){
@@ -1032,8 +1157,7 @@
     opts = opts || {};
     const dayKey = dateKey(dayDate);
     const isToday = dayKey === todayKey;
-    const dayTasks = activeTasks.filter(t => taskOccursOn(t, dayDate))
-      .sort((a,b)=> (URGENCY_ORDER[a.urgency]-URGENCY_ORDER[b.urgency]) || (a.title.localeCompare(b.title,'pl')));
+    const dayTasks = sortTasks(activeTasks.filter(t => taskOccursOn(t, dayDate)));
 
     const col = document.createElement('div');
     col.className = 'day-col' + (isToday ? ' today' : '') + (opts.outside ? ' outside' : '');
@@ -1053,7 +1177,7 @@
     if(dayTasks.length === 0){
       body.innerHTML = `<div class="empty-day">Brak zadań</div>`;
     } else {
-      dayTasks.forEach(t => body.appendChild(buildTaskCard(t)));
+      dayTasks.forEach(t => body.appendChild(buildTaskChip(t)));
     }
     board.appendChild(col);
   }
@@ -1066,15 +1190,14 @@
     document.getElementById('gotoToday').onclick = ()=>{ viewYear = today.getFullYear(); viewMonth = today.getMonth(); render(); };
   }
   function renderNoDateSidebar(activeTasks){
-    const noDateTasks = activeTasks.filter(t => !t.day)
-      .sort((a,b)=> (URGENCY_ORDER[a.urgency]-URGENCY_ORDER[b.urgency]) || (a.title.localeCompare(b.title,'pl')));
+    const noDateTasks = sortTasks(activeTasks.filter(t => !t.day));
     const noDateList = document.getElementById('noDateList');
     document.getElementById('noDateCount').textContent = noDateTasks.length;
     noDateList.innerHTML = '';
     if(noDateTasks.length === 0){
       noDateList.innerHTML = `<div class="empty-day">Brak zadań bez terminu</div>`;
     } else {
-      noDateTasks.forEach(t => noDateList.appendChild(buildTaskCard(t)));
+      noDateTasks.forEach(t => noDateList.appendChild(buildTaskChip(t)));
     }
   }
 
@@ -1087,13 +1210,14 @@
   }
 
   function render(){
-    const allTasks = loadTasks();
+    const allTasks = loadTasks().filter(t => taskCalendar(t) === activeCalendar);
     const todayKey = dateKey(today);
     const activeTasks = allTasks.filter(t => t.status !== 'Zrobione');
-    const archiveTasks = allTasks.filter(t => t.status === 'Zrobione')
-      .sort((a,b)=> (b.day||'').localeCompare(a.day||'') || a.title.localeCompare(b.title,'pl'));
-    const overdueTasks = activeTasks.filter(t => t.day && (!t.recurrence || t.recurrence==='none') && t.day < todayKey)
-      .sort((a,b)=> a.day.localeCompare(b.day));
+    const archiveTasks = currentSort==='category'
+      ? sortTasks(allTasks.filter(t => t.status === 'Zrobione'))
+      : allTasks.filter(t => t.status === 'Zrobione').sort((a,b)=> (b.day||'').localeCompare(a.day||'') || a.title.localeCompare(b.title,'pl'));
+    const overdueCandidates = activeTasks.filter(t => t.day && (!t.recurrence || t.recurrence==='none') && t.day < todayKey);
+    const overdueTasks = currentSort==='category' ? sortTasks(overdueCandidates) : overdueCandidates.slice().sort((a,b)=> a.day.localeCompare(b.day));
 
     updateBadge('overdueBadge', overdueTasks.length);
     updateBadge('archiveBadge', archiveTasks.length);
@@ -1120,8 +1244,8 @@
     // Search overrides whichever tab is selected, without switching tabs.
     const q = searchQuery.trim().toLocaleLowerCase('pl');
     if(q){
-      const results = allTasks.filter(t => t.title.toLocaleLowerCase('pl').includes(q))
-        .sort((a,b)=> (a.day || '9999-99-99').localeCompare(b.day || '9999-99-99'));
+      const matches = allTasks.filter(t => t.title.toLocaleLowerCase('pl').includes(q));
+      const results = currentSort==='category' ? sortTasks(matches) : matches.slice().sort((a,b)=> (a.day || '9999-99-99').localeCompare(b.day || '9999-99-99'));
       showFlatView(`Wyniki wyszukiwania: „${searchQuery.trim()}”`, results, {showDate:true, emptyText:'Brak zadań pasujących do wyszukiwania'});
       return;
     }
@@ -1186,8 +1310,8 @@
   }
   function openUrgentModal(){
     const list = document.getElementById('urgentList');
-    const urgentTasks = loadTasks().filter(t=>t.urgency==='Pilne' && t.status!=='Zrobione')
-      .sort((a,b)=> (a.day || '9999-99-99').localeCompare(b.day || '9999-99-99'));
+    const candidates = loadTasks().filter(t=>taskCalendar(t)===activeCalendar && t.urgency==='Pilne' && t.status!=='Zrobione');
+    const urgentTasks = currentSort==='category' ? sortTasks(candidates) : candidates.slice().sort((a,b)=> (a.day || '9999-99-99').localeCompare(b.day || '9999-99-99'));
     list.innerHTML = '';
     if(urgentTasks.length === 0){
       list.innerHTML = `<div class="empty-day">Brak pilnych zadań — wszystko na spokojnie 🎉</div>`;
@@ -1208,11 +1332,13 @@
   const fNoDate = document.getElementById('fNoDate');
   const fRecurring = document.getElementById('fRecurring');
   const fRecurrence = document.getElementById('fRecurrence');
+  const fCategory = document.getElementById('fCategory');
 
   // Populate the 30-minute interval dropdowns once. "Do" also gets a leading
   // blank option since an end time is optional even when a start is set.
   fTimeStart.innerHTML = `<option value="">—</option>` + TIME_OPTIONS.map(t=>`<option value="${t}">${t}</option>`).join('');
   fTimeEnd.innerHTML = `<option value="">—</option>` + TIME_OPTIONS.map(t=>`<option value="${t}">${t}</option>`).join('');
+  fCategory.innerHTML += Object.keys(CATEGORY_META).map(c=>`<option value="${c}">${c}</option>`).join('');
 
   function applyRecurringState(on){
     document.getElementById('fRecurrenceField').style.display = on ? 'flex' : 'none';
@@ -1236,6 +1362,8 @@
 
     document.getElementById('fTitle').value = task ? task.title : '';
     document.getElementById('fDiff').value = task ? task.difficulty : 'Średnie';
+    fCategory.value = task ? (task.category || '') : '';
+    document.getElementById('deleteFromModal').style.display = task ? 'flex' : 'none';
     fNoDate.checked = task ? !task.day : false;
     fDay.value = task ? (task.day || '') : dateKey(new Date());
     fTimeStart.value = task ? taskTimeStart(task) : '';
@@ -1268,6 +1396,15 @@
 
   fNoDate.addEventListener('change', ()=> applyNoDateState(fNoDate.checked));
   fRecurring.addEventListener('change', ()=> applyRecurringState(fRecurring.checked));
+
+  document.getElementById('deleteFromModal').addEventListener('click', ()=>{
+    if(!editingId) return;
+    const all = loadTasks().filter(x=>x.id!==editingId);
+    saveTasks(all);
+    closeModal();
+    showToast('Zadanie zostało usunięte');
+    render();
+  });
 
   document.getElementById('openAddTop').addEventListener('click', ()=>openModal());
   document.getElementById('openAddFab').addEventListener('click', ()=>openModal());
@@ -1304,6 +1441,7 @@
     e.preventDefault();
     const title = document.getElementById('fTitle').value.trim();
     const difficulty = document.getElementById('fDiff').value;
+    const category = fCategory.value;
     const day = fNoDate.checked ? '' : fDay.value;
     const timeStart = fNoDate.checked ? '' : fTimeStart.value;
     // An end time only makes sense paired with a start, and after it.
@@ -1324,13 +1462,13 @@
         // changed, so an edited task can alert again.
         const sameSchedule = prev.day===day && taskTimeStart(prev)===timeStart && prev.recurrence===recurrence;
         const notifiedAt = sameSchedule ? prev.notifiedAt : null;
-        tasks[idx] = { ...prev, title, difficulty, urgency: urgencyVal, day, time: undefined, timeStart, timeEnd, recurrence, status, description, notifiedAt };
+        tasks[idx] = { ...prev, title, difficulty, category, urgency: urgencyVal, day, time: undefined, timeStart, timeEnd, recurrence, status, description, notifiedAt };
       }
       saveTasks(tasks);
       closeModal();
       showToast('Zadanie zostało zaktualizowane');
     } else {
-      tasks.push({ id: uid(), title, difficulty, urgency: urgencyVal, day, timeStart, timeEnd, recurrence, status, description, createdAt: Date.now(), notifiedAt: null });
+      tasks.push({ id: uid(), title, difficulty, category, urgency: urgencyVal, day, timeStart, timeEnd, recurrence, status, description, calendar: activeCalendar, createdAt: Date.now(), notifiedAt: null });
       saveTasks(tasks);
       closeModal();
       showToast('Zadanie zostało dodane');
@@ -1432,6 +1570,27 @@
   document.getElementById('searchInput').addEventListener('input', function(){
     searchQuery = this.value;
     render();
+  });
+
+  // Sort: pilność (default) or kategoria, applies across every view
+  const sortSelect = document.getElementById('sortSelect');
+  sortSelect.value = currentSort;
+  sortSelect.addEventListener('change', function(){
+    currentSort = this.value;
+    localStorage.setItem('workflow_v1_sort', currentSort);
+    render();
+  });
+
+  // Calendar switch: Praca / Prywatny — scopes the entire dashboard
+  document.querySelectorAll('.cal-btn').forEach(btn=>{
+    if(btn.dataset.cal === activeCalendar) btn.classList.add('active');
+    btn.addEventListener('click', ()=>{
+      activeCalendar = btn.dataset.cal;
+      localStorage.setItem('workflow_v1_calendar', activeCalendar);
+      document.querySelectorAll('.cal-btn').forEach(b=>b.classList.toggle('active', b===btn));
+      hideTaskPreview();
+      render();
+    });
   });
 
   render();

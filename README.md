@@ -4,8 +4,11 @@ Prosty, nowoczesny dashboard do zarządzania zadaniami w pracy. Statyczna strona
 
 ## Funkcje
 
-- Dodawanie zadania: tytuł, poziom trudności, pilność, dzień realizacji (lub „bez terminu”), opcjonalny przedział czasowy „Od–Do” w interwałach co 30 minut (dźwięk przypomnienia gra o godzinie „Od”), cykliczność (codziennie/co tydzień/co miesiąc), status, opis.
+- Dodawanie zadania: tytuł, poziom trudności, **kategoria** (Esklep/Mail/Oferta/Mailing/Płatności/Zamówienie/Kolekcja — każda z własną ikoną), pilność, dzień realizacji (lub „bez terminu”), opcjonalny przedział czasowy „Od–Do” w interwałach co 30 minut (dźwięk przypomnienia gra o godzinie „Od”), cykliczność (codziennie/co tydzień/co miesiąc), status, opis.
+- Dwa niezależne kalendarze — **Praca** / **Prywatny** — przełącznik w nagłówku; każdy pokazuje tylko swoje zadania, nowe zadanie trafia do aktualnie wybranego.
 - Widoki: **Dziś**, **Tydzień**, **Miesiąc** (kalendarz), **Zaległe** (przeterminowane, nieukończone) i **Archiwum** (ukończone — znikają z kalendarza i trafiają tutaj).
+- Sortowanie zadań wg pilności (domyślnie) lub kategorii, dostępne obok zakładek widoków.
+- W kalendarzu zadania pokazują się jako kompaktowe, kolorowe (wg pilności) „chipy” z ikoną i skróconym tytułem — pełne szczegóły widać po najechaniu myszką (podgląd) lub po kliknięciu (edycja), więc dzień z wieloma zadaniami nie rozciąga się na całą wysokość ekranu.
 - Zadania bez terminu trafiają do osobnego panelu bocznego zamiast konkretnego dnia.
 - Wyszukiwarka po tytule zadania, filtrująca na żywo niezależnie od aktywnej zakładki.
 - Tryb jasny/ciemny z przełącznikiem w nagłówku, zapamiętywany w przeglądarce.
