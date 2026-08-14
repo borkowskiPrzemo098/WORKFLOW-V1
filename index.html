@@ -65,14 +65,17 @@
   body{
     margin:0;
     font-family:var(--font);
-    background:
-      radial-gradient(1200px 500px at 100% -10%, color-mix(in srgb, var(--accent-soft) 70%, transparent) 0%, transparent 60%),
-      radial-gradient(900px 400px at -10% 0%, color-mix(in srgb, var(--low-soft) 70%, transparent) 0%, transparent 55%),
-      var(--bg);
+    /* background-color kept separate from background-image: some engines
+       fail to repaint a bare var() used as the color layer inside a combined
+       `background` shorthand when that variable changes at runtime. */
+    background-color:var(--bg);
+    background-image:
+      radial-gradient(1400px 650px at 100% -10%, color-mix(in srgb, var(--accent-soft) 90%, transparent) 0%, transparent 65%),
+      radial-gradient(1000px 500px at -10% 0%, color-mix(in srgb, var(--accent-soft) 55%, transparent) 0%, transparent 60%);
     color:var(--ink);
     min-height:100%;
     -webkit-font-smoothing:antialiased;
-    transition:background-color .2s ease, color .2s ease;
+    transition:background-color .25s ease, color .25s ease;
   }
 
   .wrap{max-width:1320px; margin:0 auto; padding:28px 32px 120px;}
@@ -693,13 +696,16 @@
   // Accent color palette. Each preset retints both the primary accent (buttons,
   // active states, links) and its soft tint — which the body background
   // gradient is built from — so the whole page shifts hue, not just one button.
+  // Each preset also carries a tinted --bg (the page's base canvas color, not
+  // just the corner highlight) so picking a color visibly recolors the whole
+  // page — not only the buttons that happen to use --accent directly.
   const ACCENT_PRESETS = {
-    blue:   { label:'Niebieski',    accent:'#3d5cff', softLight:'#eef1ff', softDark:'#232a45' },
-    violet: { label:'Fioletowy',    accent:'#8b5cf6', softLight:'#f1ecfe', softDark:'#2c2542' },
-    green:  { label:'Zielony',      accent:'#15a35a', softLight:'#e6f7ee', softDark:'#17351f' },
-    rose:   { label:'Różowy',       accent:'#e0437a', softLight:'#fdecf2', softDark:'#3a2230' },
-    amber:  { label:'Bursztynowy',  accent:'#c97a1f', softLight:'#fdf1e0', softDark:'#3a2c16' },
-    teal:   { label:'Turkusowy',    accent:'#0d9488', softLight:'#e3f6f4', softDark:'#173330' }
+    blue:   { label:'Niebieski',    accent:'#3d5cff', softLight:'#eef1ff', softDark:'#232a45', bgLight:'#f4f5f9', bgDark:'#14161c' },
+    violet: { label:'Fioletowy',    accent:'#8b5cf6', softLight:'#f1ecfe', softDark:'#2c2542', bgLight:'#f6f4fb', bgDark:'#18151f' },
+    green:  { label:'Zielony',      accent:'#15a35a', softLight:'#e6f7ee', softDark:'#17351f', bgLight:'#f2f8f4', bgDark:'#121b15' },
+    rose:   { label:'Różowy',       accent:'#e0437a', softLight:'#fdecf2', softDark:'#3a2230', bgLight:'#faf4f6', bgDark:'#1c1417' },
+    amber:  { label:'Bursztynowy',  accent:'#c97a1f', softLight:'#fdf1e0', softDark:'#3a2c16', bgLight:'#f9f6f0', bgDark:'#1c1712' },
+    teal:   { label:'Turkusowy',    accent:'#0d9488', softLight:'#e3f6f4', softDark:'#173330', bgLight:'#f0f7f6', bgDark:'#111c1a' }
   };
   let currentAccent = localStorage.getItem(ACCENT_KEY) || 'blue';
   if(!ACCENT_PRESETS[currentAccent]) currentAccent = 'blue';
@@ -709,8 +715,13 @@
   function applyColors(){
     const mode = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
     const p = ACCENT_PRESETS[currentAccent];
+    const bg = mode === 'dark' ? p.bgDark : p.bgLight;
     document.documentElement.style.setProperty('--accent', p.accent);
     document.documentElement.style.setProperty('--accent-soft', mode === 'dark' ? p.softDark : p.softLight);
+    document.documentElement.style.setProperty('--bg', bg);
+    // Some engines don't reliably repaint background-color on repeated custom
+    // property changes — set it directly on <body> too as a belt-and-braces fix.
+    document.body.style.backgroundColor = bg;
     document.querySelectorAll('.color-swatch').forEach(b => b.classList.toggle('active', b.dataset.color === currentAccent));
   }
   function applyTheme(mode){
