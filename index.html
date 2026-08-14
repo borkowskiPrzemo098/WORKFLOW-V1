@@ -182,6 +182,19 @@
   .u-srednia .urg-icon{background:var(--mid-soft); color:var(--mid);}
   .u-niska .urg-icon{background:var(--low-soft); color:var(--low);}
 
+  .task-time{
+    display:inline-flex; align-items:center; gap:4px;
+    font-size:10.5px; font-weight:700; color:var(--ink-soft);
+    background:var(--surface-2); border:1px solid var(--border);
+    padding:3px 7px 3px 6px; border-radius:6px;
+  }
+  .task-time svg{width:10px; height:10px; flex-shrink:0;}
+  .task.is-firing{animation:taskPulse 1s ease-in-out 3;}
+  @keyframes taskPulse{
+    0%,100%{box-shadow:var(--shadow-sm);}
+    50%{box-shadow:0 0 0 3px var(--urgent-soft), var(--shadow-md);}
+  }
+
   .task-meta{display:flex; align-items:center; gap:6px; margin-top:9px; flex-wrap:wrap;}
   .badge{
     font-size:10.5px; font-weight:700; padding:3px 7px; border-radius:6px;
@@ -340,6 +353,10 @@
       </div>
     </div>
     <div class="top-actions">
+      <div class="stat-pill" id="clockPill" title="Aktualny czas">
+        <svg viewBox="0 0 24 24" fill="none" width="13" height="13"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 7v5l3.2 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <b id="liveClock">--:--</b>
+      </div>
       <div class="stat-pill" id="statPilne"><span class="dot" style="background:var(--urgent)"></span> <b id="cntPilne">0</b> pilnych</div>
       <div class="stat-pill" id="statAll"><span class="dot" style="background:var(--accent)"></span> <b id="cntAll">0</b> zadań</div>
       <button class="btn-primary" id="openAddTop">
@@ -393,6 +410,10 @@
           <label for="fDay">Dzień realizacji</label>
           <input type="date" id="fDay" required>
         </div>
+      </div>
+      <div class="field">
+        <label for="fTime">Godzina przypomnienia <span style="font-weight:500; color:var(--ink-faint);">(opcjonalnie — zagra dźwięk o tej porze)</span></label>
+        <input type="time" id="fTime">
       </div>
       <div class="field">
         <label>Jak pilne jest zadanie?</label>
@@ -554,6 +575,7 @@
         dayTasks.forEach(t=>{
           const card = document.createElement('div');
           card.className = 'task ' + URG_CLASS[t.urgency] + (t.status==='Zrobione' ? ' is-done' : '');
+          card.dataset.id = t.id;
           card.title = t.description || '';
           card.innerHTML = `
             <div class="task-top">
@@ -563,6 +585,7 @@
             <div class="task-meta">
               <span class="badge diff-${t.difficulty}">${t.difficulty}</span>
               <span class="badge status-badge ${statusClass(t.status)}">${t.status}</span>
+              ${t.time ? `<span class="task-time"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>${t.time}</span>` : ''}
             </div>
             <div class="task-foot">
               <div class="task-user"><span class="avatar">${initials(t.user)}</span>${escapeHtml(t.user)}</div>
@@ -629,12 +652,13 @@
     const title = document.getElementById('fTitle').value.trim();
     const difficulty = document.getElementById('fDiff').value;
     const day = document.getElementById('fDay').value;
+    const time = document.getElementById('fTime').value;
     const status = document.getElementById('fStatus').value;
     const description = document.getElementById('fDesc').value.trim();
     if(!user || !title || !day) return;
 
     const tasks = loadTasks();
-    tasks.push({ id: uid(), user, title, difficulty, urgency: urgencyVal, day, status, description, createdAt: Date.now() });
+    tasks.push({ id: uid(), user, title, difficulty, urgency: urgencyVal, day, time, status, description, createdAt: Date.now(), notifiedAt: null });
     saveTasks(tasks);
     closeModal();
     showToast('Zadanie zostało dodane');
@@ -645,6 +669,75 @@
   window.addEventListener('storage', (e)=>{
     if(e.key === STORAGE_KEY) render();
   });
+
+  // Live clock
+  const clockEl = document.getElementById('liveClock');
+  function tickClock(){
+    const now = new Date();
+    clockEl.textContent = now.toLocaleTimeString('pl-PL', {hour:'2-digit', minute:'2-digit'});
+  }
+
+  // Notification permission (best-effort, silently ignored if unsupported/denied)
+  if('Notification' in window && Notification.permission === 'default'){
+    // Ask only once the user has actually created a task with a reminder time,
+    // not on cold load — avoids an unsolicited permission prompt.
+  }
+
+  function beep(){
+    try{
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const now = ctx.currentTime;
+      [0, 0.22, 0.44].forEach((t, i)=>{
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = i === 2 ? 1046.5 : 880;
+        gain.gain.setValueAtTime(0, now + t);
+        gain.gain.linearRampToValueAtTime(0.22, now + t + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + t + 0.18);
+        osc.connect(gain).connect(ctx.destination);
+        osc.start(now + t);
+        osc.stop(now + t + 0.2);
+      });
+    }catch(e){ /* audio unavailable — ignore */ }
+  }
+
+  function checkDueTasks(){
+    const now = new Date();
+    const todayKey = now.toISOString().slice(0,10);
+    const hhmm = now.toTimeString().slice(0,5);
+    const tasks = loadTasks();
+    let changed = false;
+    tasks.forEach(t=>{
+      if(!t.time || t.status === 'Zrobione') return;
+      if(t.day !== todayKey) return;
+      if(t.time !== hhmm) return;
+      if(t.notifiedAt === todayKey + t.time) return; // already fired for this minute
+
+      t.notifiedAt = todayKey + t.time;
+      changed = true;
+      beep();
+      showToast(`⏰ „${t.title}" — czas na to zadanie (${t.user})`);
+      if('Notification' in window && Notification.permission === 'granted'){
+        try{ new Notification('Workflow — zadanie do zrobienia', { body: `${t.title} (${t.user})`, tag: t.id }); }catch(e){}
+      }
+      const card = document.querySelector(`.task[data-id="${t.id}"]`);
+      if(card){ card.classList.add('is-firing'); setTimeout(()=>card.classList.remove('is-firing'), 3200); }
+    });
+    if(changed) saveTasks(tasks);
+  }
+
+  // Ask for notification permission the first time a reminder time is actually set
+  document.getElementById('fTime').addEventListener('change', function(){
+    if(this.value && 'Notification' in window && Notification.permission === 'default'){
+      Notification.requestPermission().catch(()=>{});
+    }
+  });
+
+  tickClock();
+  setInterval(tickClock, 15000);
+  setInterval(checkDueTasks, 20000);
+  checkDueTasks();
 
   render();
 })();
