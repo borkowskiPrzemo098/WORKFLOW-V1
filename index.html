@@ -650,11 +650,14 @@
     <button class="view-tab" data-view="overdue" type="button">Zaległe <span class="tab-badge" id="overdueBadge" style="display:none;">0</span></button>
     <button class="view-tab" data-view="archive" type="button">Archiwum <span class="tab-badge" id="archiveBadge" style="display:none;">0</span></button>
     <div class="sort-wrap">
-      <label for="sortSelect">Sortuj:</label>
-      <select id="sortSelect">
+      <label for="filterType">Filtruj:</label>
+      <select id="filterType">
+        <option value="">Wszystkie</option>
         <option value="urgency">Pilność</option>
         <option value="category">Kategoria</option>
       </select>
+      <select id="filterValue" style="display:none;"></select>
+      <button class="chip-today" id="clearFilter" type="button" style="display:none;">Wyczyść filtr</button>
     </div>
   </div>
 
@@ -954,12 +957,20 @@
   };
   function categoryIcon(cat){ return cat && CATEGORY_META[cat] ? CATEGORY_META[cat].icon : ''; }
 
-  // Sorting: "pilność" (default) ranks by urgency; "kategoria" groups same
-  // category together first (uncategorized tasks sort last), urgency as tiebreak.
-  let currentSort = localStorage.getItem('workflow_v1_sort') || 'urgency';
   function cmpUrgency(a,b){ return (URGENCY_ORDER[a.urgency]-URGENCY_ORDER[b.urgency]) || a.title.localeCompare(b.title,'pl'); }
-  function cmpCategory(a,b){ return (a.category||'￿').localeCompare(b.category||'￿','pl') || cmpUrgency(a,b); }
-  function sortTasks(list){ return list.slice().sort(currentSort==='category' ? cmpCategory : cmpUrgency); }
+  function sortTasks(list){ return list.slice().sort(cmpUrgency); }
+
+  // Filter: pick a dimension (Pilność/Kategoria), then a specific value from
+  // it — only tasks matching that exact value are shown anywhere in the app,
+  // until cleared. Persisted so the filter survives a reload.
+  let filterType = localStorage.getItem('workflow_v1_filter_type') || '';
+  let filterValue = localStorage.getItem('workflow_v1_filter_value') || '';
+  function taskPassesFilter(t){
+    if(!filterType || !filterValue) return true;
+    if(filterType === 'urgency') return t.urgency === filterValue;
+    if(filterType === 'category') return (t.category || '') === filterValue;
+    return true;
+  }
 
   // Calendar: Praca (work) / Prywatny (private) — a single top-level filter
   // that scopes the whole dashboard, not a per-view setting.
@@ -1210,14 +1221,13 @@
   }
 
   function render(){
-    const allTasks = loadTasks().filter(t => taskCalendar(t) === activeCalendar);
+    const allTasks = loadTasks().filter(t => taskCalendar(t) === activeCalendar && taskPassesFilter(t));
     const todayKey = dateKey(today);
     const activeTasks = allTasks.filter(t => t.status !== 'Zrobione');
-    const archiveTasks = currentSort==='category'
-      ? sortTasks(allTasks.filter(t => t.status === 'Zrobione'))
-      : allTasks.filter(t => t.status === 'Zrobione').sort((a,b)=> (b.day||'').localeCompare(a.day||'') || a.title.localeCompare(b.title,'pl'));
-    const overdueCandidates = activeTasks.filter(t => t.day && (!t.recurrence || t.recurrence==='none') && t.day < todayKey);
-    const overdueTasks = currentSort==='category' ? sortTasks(overdueCandidates) : overdueCandidates.slice().sort((a,b)=> a.day.localeCompare(b.day));
+    const archiveTasks = allTasks.filter(t => t.status === 'Zrobione')
+      .sort((a,b)=> (b.day||'').localeCompare(a.day||'') || a.title.localeCompare(b.title,'pl'));
+    const overdueTasks = activeTasks.filter(t => t.day && (!t.recurrence || t.recurrence==='none') && t.day < todayKey)
+      .sort((a,b)=> a.day.localeCompare(b.day));
 
     updateBadge('overdueBadge', overdueTasks.length);
     updateBadge('archiveBadge', archiveTasks.length);
@@ -1233,19 +1243,26 @@
       document.getElementById('weekdayRow').style.display = 'none';
       document.getElementById('noDatePanel').style.display = 'none';
       board.style.display = 'block';
-      board.innerHTML = `<div class="global-empty">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
-        <h3>Brak zadań</h3>
-        <p>Kliknij „Nowe zadanie”, aby dodać pierwsze zadanie do panelu.</p>
-      </div>`;
+      const filterActive = filterType && filterValue;
+      board.innerHTML = filterActive
+        ? `<div class="global-empty">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+            <h3>Brak zadań pasujących do filtra</h3>
+            <p>Nic nie pasuje do wybranego filtra (${filterType === 'category' ? 'kategoria' : 'pilność'}: ${filterValue}). Wyczyść filtr, aby zobaczyć resztę zadań.</p>
+          </div>`
+        : `<div class="global-empty">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+            <h3>Brak zadań</h3>
+            <p>Kliknij „Nowe zadanie”, aby dodać pierwsze zadanie do panelu.</p>
+          </div>`;
       return;
     }
 
     // Search overrides whichever tab is selected, without switching tabs.
     const q = searchQuery.trim().toLocaleLowerCase('pl');
     if(q){
-      const matches = allTasks.filter(t => t.title.toLocaleLowerCase('pl').includes(q));
-      const results = currentSort==='category' ? sortTasks(matches) : matches.slice().sort((a,b)=> (a.day || '9999-99-99').localeCompare(b.day || '9999-99-99'));
+      const results = allTasks.filter(t => t.title.toLocaleLowerCase('pl').includes(q))
+        .sort((a,b)=> (a.day || '9999-99-99').localeCompare(b.day || '9999-99-99'));
       showFlatView(`Wyniki wyszukiwania: „${searchQuery.trim()}”`, results, {showDate:true, emptyText:'Brak zadań pasujących do wyszukiwania'});
       return;
     }
@@ -1310,8 +1327,9 @@
   }
   function openUrgentModal(){
     const list = document.getElementById('urgentList');
-    const candidates = loadTasks().filter(t=>taskCalendar(t)===activeCalendar && t.urgency==='Pilne' && t.status!=='Zrobione');
-    const urgentTasks = currentSort==='category' ? sortTasks(candidates) : candidates.slice().sort((a,b)=> (a.day || '9999-99-99').localeCompare(b.day || '9999-99-99'));
+    const urgentTasks = loadTasks()
+      .filter(t=>taskCalendar(t)===activeCalendar && taskPassesFilter(t) && t.urgency==='Pilne' && t.status!=='Zrobione')
+      .sort((a,b)=> (a.day || '9999-99-99').localeCompare(b.day || '9999-99-99'));
     list.innerHTML = '';
     if(urgentTasks.length === 0){
       list.innerHTML = `<div class="empty-day">Brak pilnych zadań — wszystko na spokojnie 🎉</div>`;
@@ -1572,12 +1590,51 @@
     render();
   });
 
-  // Sort: pilność (default) or kategoria, applies across every view
-  const sortSelect = document.getElementById('sortSelect');
-  sortSelect.value = currentSort;
-  sortSelect.addEventListener('change', function(){
-    currentSort = this.value;
-    localStorage.setItem('workflow_v1_sort', currentSort);
+  // Filter: choose Pilność or Kategoria, then a specific value from it —
+  // only matching tasks show up anywhere until "Wyczyść filtr" is pressed.
+  const filterTypeSel = document.getElementById('filterType');
+  const filterValueSel = document.getElementById('filterValue');
+  const clearFilterBtn = document.getElementById('clearFilter');
+
+  function populateFilterValue(){
+    if(filterType === 'urgency'){
+      filterValueSel.innerHTML = Object.keys(URGENCY_ORDER).map(v=>`<option value="${v}">${v}</option>`).join('');
+      filterValueSel.style.display = '';
+    } else if(filterType === 'category'){
+      filterValueSel.innerHTML = Object.keys(CATEGORY_META).map(c=>`<option value="${c}">${c}</option>`).join('');
+      filterValueSel.style.display = '';
+    } else {
+      filterValueSel.innerHTML = '';
+      filterValueSel.style.display = 'none';
+    }
+    if(filterValue) filterValueSel.value = filterValue;
+    clearFilterBtn.style.display = (filterType && filterValue) ? '' : 'none';
+  }
+
+  filterTypeSel.value = filterType;
+  populateFilterValue();
+
+  filterTypeSel.addEventListener('change', function(){
+    filterType = this.value;
+    filterValue = '';
+    localStorage.setItem('workflow_v1_filter_type', filterType);
+    localStorage.setItem('workflow_v1_filter_value', '');
+    populateFilterValue();
+    render();
+  });
+  filterValueSel.addEventListener('change', function(){
+    filterValue = this.value;
+    localStorage.setItem('workflow_v1_filter_value', filterValue);
+    clearFilterBtn.style.display = '';
+    render();
+  });
+  clearFilterBtn.addEventListener('click', function(){
+    filterType = '';
+    filterValue = '';
+    filterTypeSel.value = '';
+    localStorage.setItem('workflow_v1_filter_type', '');
+    localStorage.setItem('workflow_v1_filter_value', '');
+    populateFilterValue();
     render();
   });
 
