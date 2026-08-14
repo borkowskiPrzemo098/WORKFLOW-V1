@@ -9,9 +9,10 @@ Prosty, nowoczesny dashboard do zarządzania zadaniami w pracy. Statyczna strona
 - Zadania bez terminu trafiają do osobnego panelu bocznego zamiast konkretnego dnia.
 - Wyszukiwarka po tytule zadania, filtrująca na żywo niezależnie od aktywnej zakładki.
 - Tryb jasny/ciemny z przełącznikiem w nagłówku, zapamiętywany w przeglądarce.
+- Wybór koloru motywu (6 palet) obok przełącznika jasny/ciemny — zmienia akcent (przyciski, aktywne stany) i dopasowuje odcień tła, zapamiętywany osobno od trybu jasny/ciemny.
 - Ikony pilności (wykrzyknik dla zadań pilnych, inne ikony dla pozostałych poziomów), odznaka 🔁 dla zadań cyklicznych, odznaki statusu i trudności.
 - Zegar na żywo oraz dźwiękowe/wizualne powiadomienie, gdy nadejdzie ustawiona godzina zadania (strona musi być otwarta w karcie przeglądarki).
-- Licznik zadań pilnych (klikalny — pokazuje pełną listę) i wszystkich aktywnych zadań, edycja i usuwanie jednym kliknięciem.
+- Licznik zadań pilnych (klikalny — pokazuje pełną listę) i wszystkich aktywnych zadań; checkbox na karcie do oznaczenia „Zrobione” jednym kliknięciem, edycja i usuwanie.
 - Pływający przycisk „+” do szybkiego dodawania zadań, widok aktualizuje się natychmiast po dodaniu/edycji/usunięciu.
 
 ### Ograniczenia zadań cyklicznych
